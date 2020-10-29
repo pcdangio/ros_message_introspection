@@ -47,6 +47,7 @@ void message::impl::parse_message_definition(const topic_tools::ShapeShifter& sh
     struct field_t
     {
         std::string type;
+        std::string array;
         std::string name;
     };
     std::unordered_map<std::string, std::vector<field_t>> message_definitions;
@@ -89,12 +90,52 @@ void message::impl::parse_message_definition(const topic_tools::ShapeShifter& sh
         }
         else
         {
+            // Check if type is an array.
+            auto array_position = tokens[0].find_first_of('[');
+            std::string type = tokens[0];
+            std::string array = "";
+            if(array_position != std::string::npos)
+            {
+                array = tokens[0].substr(array_position);
+                type.erase(array_position);
+            }
+
             // Add to fields workspace.
-            fields_workspace->push_back({tokens[0], tokens[1]});
+            fields_workspace->push_back({type, array, tokens[1]});
         }
     }
 
-    // Create the 
+    // Iterate through the definition map to correct incomplete types.
+    for(auto definition = message_definitions.begin(); definition != message_definitions.end(); ++definition)
+    {
+        auto& fields = definition->second;
+        for(auto field = fields.begin(); field != fields.end(); ++field)
+        {
+            // Check if field is a primitive field.
+            if(primitives.count(field->type) != 0)
+            {
+                continue;
+            }
+
+            // Check if the field's type definition exists in the definition map.
+            if(message_definitions.count(field->type) == 0)
+            {
+                std::cout << "missing full definition for " << field->type << std::endl;
+                // Exact typename not found. Search through definitions to find the matching full type name.
+                for(auto candidate = message_definitions.begin(); candidate != message_definitions.end(); ++ candidate)
+                {
+                    // Check if partial type matches full candidate type.
+                    if(candidate->first.find(field->type) != std::string::npos)
+                    {
+                        // Match found. Update partial type to full type.
+                        field->type = candidate->first;
+                        // Stop search.
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     std::cout << "message definition:" << std::endl;
     for(auto msg_def = message_definitions.begin(); msg_def != message_definitions.end(); ++msg_def)
@@ -102,7 +143,7 @@ void message::impl::parse_message_definition(const topic_tools::ShapeShifter& sh
         auto& field_defs = msg_def->second;
         for(auto field_def = field_defs.begin(); field_def != field_defs.end(); ++field_def)
         {
-            std::cout << msg_def->first << "." << field_def->name << " (" << field_def->type << ")" << std::endl;
+            std::cout << msg_def->first << "." << field_def->name << " (" << field_def->type << ") " << "array:" << field_def->array << std::endl;
         }
     }
 }
