@@ -1,10 +1,14 @@
-#ifndef MESSAGE_DEFINITION_H
-#define MESSAGE_DEFINITION_H
+#ifndef MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
+#define MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
+
+#include "message_introspection/field_info.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+
+namespace message_introspection {
 
 class message_definition
 {
@@ -17,16 +21,8 @@ public:
     std::string print_definition() const;
 
     // LISTING
-    struct field_t
-    {
-        std::string name;
-        std::string type;
-        std::string array;
-        bool is_primitive;
-        std::string path;
-    };
-    bool list_fields(std::vector<field_t>& fields, std::string parent_path = "") const;
-    bool field_info(field_t& field_info, const std::string& path) const;
+    bool list_fields(std::vector<field_info_t>& fields, std::string parent_path = "") const;
+    bool field_info(field_info_t& field_info, const std::string& path) const;
 
 private:
     // PRIMITIVES
@@ -60,5 +56,7 @@ private:
     // LISTING
     const definition_t* get_definition(const std::string& path) const;
 };
+
+}
 
 #endif

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <boost/tokenizer.hpp>
 
+using namespace message_introspection;
+
 // CONSTRUCTORS
 message_definition::message_definition(const std::string& message_type, const std::string& message_definition)
 {
@@ -100,7 +102,7 @@ const message_definition::definition_t* message_definition::get_definition(const
 
     return parent_definition;
 }
-bool message_definition::list_fields(std::vector<message_definition::field_t>&  fields, std::string parent_path) const
+bool message_definition::list_fields(std::vector<field_info_t>&  fields, std::string parent_path) const
 {
     // Get the definition for the parent path.
     auto parent_definition = message_definition::get_definition(parent_path);
@@ -118,7 +120,7 @@ bool message_definition::list_fields(std::vector<message_definition::field_t>&  
     for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
     {
         // Create output field.
-        field_t output_field;
+        field_info_t output_field;
         
         // Set type information.
         output_field.type = field->type;
@@ -141,7 +143,7 @@ bool message_definition::list_fields(std::vector<message_definition::field_t>&  
 
     return true;
 }
-bool message_definition::field_info(field_t& field_info, const std::string& path) const
+bool message_definition::field_info(field_info_t& field_info, const std::string& path) const
 {
     // Get definition for path.
     auto definition = message_definition::get_definition(path);
