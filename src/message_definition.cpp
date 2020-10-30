@@ -65,8 +65,71 @@ std::string message_definition::print_definition() const
     return output.str();
 }
 
+// LISTING
+std::vector<message_definition::field_t> message_definition::list_fields(std::string parent_path) const
+{
+    // Split up the path into its compoent pieces.
+    boost::char_separator<char> delimiter(".");
+    boost::tokenizer<boost::char_separator<char>> tokenizer(parent_path, delimiter);
+    std::vector<std::string> path_parts(tokenizer.begin(), tokenizer.end());
+
+    // Iterate over path parts to traverse the tree.
+    auto parent_definition = &(message_definition::m_definition);
+    for(auto path_part = path_parts.cbegin(); path_part != path_parts.cend(); ++path_part)
+    {
+        bool path_part_found = false;
+        // Iterate through current parent definition to find the path part as a field name.
+        for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
+        {
+            // Check if field name matches path name.
+            if(field->name.compare(*path_part) == 0)
+            {
+                // Path matches. Update parent_definition to this field and stop search.
+                parent_definition = &(*field);
+                path_part_found = true;
+                break;
+            }
+        }
+
+        // Quit if the path part was not found.
+        if(!path_part_found)
+        {
+            return std::vector<field_t>();
+        }
+    }
+
+    // If this point reached, the full path has been found.
+    // Populate the fields output from the parent definition.
+    std::vector<field_t> output;
+    for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
+    {
+        // Create output field.
+        field_t output_field;
+        
+        // Set type information.
+        output_field.type = field->type;
+        output_field.array = field->array;
+        output_field.is_primitive = message_definition::is_primitive_type(field->type);
+
+        // Set name information.
+        output_field.name = field->name;
+
+        // Set path information.
+        if(!parent_path.empty())
+        {
+            output_field.path = parent_path + ".";
+        }
+        output_field.path += field->name;
+
+        // Add to output.
+        output.push_back(output_field);
+    }
+
+    return output;
+}
+
 // PRIMITIVES
-bool message_definition::is_primitive_type(const std::string& type)
+bool message_definition::is_primitive_type(const std::string& type) const
 {
     return (message_definition::m_primitive_types.count(type) != 0);
 }
@@ -163,7 +226,7 @@ void message_definition::parse_components(std::string message_type, std::string 
     }
 }
 
-// RECURSION
+// DEFINITION
 void message_definition::add_definition(definition_t& definition, std::string type, std::string array, std::string name)
 {
     // Set the definition's type, array, and name.

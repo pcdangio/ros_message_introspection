@@ -16,10 +16,20 @@ public:
     std::string print_components() const;
     std::string print_definition() const;
 
+    struct field_t
+    {
+        std::string name;
+        std::string type;
+        std::string array;
+        bool is_primitive;
+        std::string path;
+    };
+    std::vector<field_t> list_fields(std::string parent_path = "") const;
+
 private:
     // PRIMITIVES
     std::unordered_map<std::string, uint32_t> m_primitive_types;
-    bool is_primitive_type(const std::string& type);
+    bool is_primitive_type(const std::string& type) const;
 
     // COMPONENTS
     struct component_t
