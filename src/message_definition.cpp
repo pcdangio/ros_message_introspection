@@ -26,11 +26,8 @@ message_definition::message_definition(const std::string& message_type, const st
     // First extract message component types.
     message_definition::parse_components(message_type, message_definition);
 
-    // Reset primary definition.
-    message_definition::m_definition = definition_t();
-
     // Add top level message to the definition, and let recursion handle the rest.
-    message_definition::add_definition(message_definition::m_definition, message_type, "", "");
+    message_definition::add_definition(message_definition::m_definition, {message_type});
 }
 
 // PRINTING
@@ -163,6 +160,80 @@ bool message_definition::field_info(field_info_t& field_info, const std::string&
     return true;
 }
 
+void message_definition::new_message(const std::vector<uint8_t>& serialized_data)
+{
+   message_definition::m_value_map.clear();
+
+    // Iterate through the definition tree linearly to segment out the bytes.
+    auto byte = serialized_data.cbegin();
+    auto* definition = &(message_definition::m_definition);
+    std::string parent_path = "";
+    for(auto field = definition->fields.begin(); field != definition->fields.end(); ++field)
+    {
+        // Build current path.
+        std::string current_path = "";
+        if(!parent_path.empty())
+        {
+            current_path = parent_path + ".";
+        }
+        current_path += field->name;
+
+        // Check if field is primitive.
+        if(field->is_primitive)
+        {
+            // Check if field is string.
+            if(field->is_string)
+            {
+                // Field is string.
+                // Grab vector for this path.
+                auto& bytes = message_definition::m_value_map[current_path];
+
+                // Read string bytes from current position until null termination.
+                for(;byte != serialized_data.cend(); ++byte)
+                {
+                    bytes.push_back(*byte);
+                    if(*byte == 0)
+                    {
+                        break;
+                    }
+                }
+
+                // Done reading this field. Continue to next field.
+                continue;
+            }
+
+            // Check if field is array.
+            if(field->is_array)
+            {
+                // Grab vector for this path.
+                
+                // Check if fixed or variable size.
+                if(field->array_length > 0)
+                {
+                    // Fixed size.
+                    // Get total length of bytes for this array.
+                    uint32_t data_length = field->array_length * field->size;
+                    // Read bytes in.
+                }
+                else
+                {
+                    // Variable size.
+                }
+            }
+        }
+        else
+        {
+            // ? RECURSE ?
+        }
+    }
+}
+
+// GET
+bool message_definition::get_field(double& value, const std::string& path) const
+{
+
+}
+
 // PRIMITIVES
 bool message_definition::is_primitive_type(const std::string& type) const
 {
@@ -224,8 +295,29 @@ void message_definition::parse_components(std::string message_type, std::string 
                 type.erase(array_position);
             }
 
+            // Create a new component.
+            message_definition::component_t new_component;
+
+            // Set type information.
+            new_component.type = type;
+            new_component.is_primitive = message_definition::is_primitive_type(type);
+            new_component.is_string = (type.compare("string") == 0);
+            // Set array information.
+            new_component.array = array;
+            new_component.is_array = !array.empty();
+            if(array.size() > 2)
+            {
+                new_component.array_length = std::stoul(array.substr(1, array.size() - 2));
+            }
+            else
+            {
+                new_component.array_length = 0;
+            }
+            // Set name information.
+            new_component.name = tokens[1];
+
             // Add to fields workspace.
-            fields_workspace->push_back({type, array, tokens[1]});
+            fields_workspace->push_back(new_component);
         }
     }
 
@@ -262,18 +354,24 @@ void message_definition::parse_components(std::string message_type, std::string 
 }
 
 // DEFINITION
-void message_definition::add_definition(definition_t& definition, std::string type, std::string array, std::string name)
+void message_definition::add_definition(definition_t& definition, const component_t& component_definition)
 {
     // Set the definition's type, array, and name.
-    definition.type = type;
-    definition.array = array;
-    definition.name = name;
+    definition.type = component_definition.type;
+    definition.array = component_definition.array;
+    definition.name = component_definition.name;
+
+    // Set description elements.
+    definition.is_primitive = component_definition.is_primitive;
+    definition.is_string = component_definition.is_string;
+    definition.is_array = component_definition.is_array;
+    definition.array_length = component_definition.array_length;
 
     // Find the definition's type.
-    if(message_definition::is_primitive_type(type))
+    if(message_definition::is_primitive_type(definition.type))
     {
         // This definition is primitive. Set it's size and complete.
-        definition.size = message_definition::m_primitive_types[type];
+        definition.size = message_definition::m_primitive_types[definition.type];
     }
     else
     {
@@ -283,17 +381,15 @@ void message_definition::add_definition(definition_t& definition, std::string ty
         definition.size = 0;
 
         // Get the fields of this definition from the component map.
-        auto fields = message_definition::m_component_definitions[type];
+        auto fields = message_definition::m_component_definitions[definition.type];
         // Iterate through each field to add it recursively to the definition.
         for(auto field = fields.begin(); field != fields.end(); ++field)
         {
-            // Create new definition for this field.
-            definition_t field_definition;
-            // Add it to the array BEFORE populating it for copy efficiency.
-            definition.fields.push_back(field_definition);
+            // Add a new definition to the array BEFORE populating it for copy efficiency.
+            definition.fields.push_back(definition_t());
             auto& field_definition_reference = definition.fields.back();
             // Now add the details to the field recursively and in place.
-            message_definition::add_definition(field_definition_reference, field->type, field->array, field->name);
+            message_definition::add_definition(field_definition_reference, *field);
             // Add field's computed size to the definition's size.
             definition.size += field_definition_reference.size;
         }

@@ -46,6 +46,9 @@ public:
     /// An example path is pose.position.x
     bool field_info(field_info_t& field_info, const std::string& path) const;
 
+    void new_message(const std::vector<uint8_t>& serialized_data);
+    bool get_field(double& value, const std::string& path) const;
+
 private:
     // PRIMITIVES
     /// \brief A map of primitive type strings and their size information.
@@ -63,6 +66,15 @@ private:
         std::string array;
         /// \brief The component's field name.
         std::string name;
+
+        /// \brief Indicates if the definition is a primitive type.
+        bool is_primitive;
+        /// \brief Indicates if the definition's type is a string.
+        bool is_string;
+        /// \brief Indicates if the definition is an array.
+        bool is_array;
+        /// \brief The size of the array. 0 indicates variable size.
+        uint32_t array_length;
     };
     /// \brief A map of component message definitions (top level only)
     std::unordered_map<std::string, std::vector<component_t>> m_component_definitions;
@@ -81,6 +93,16 @@ private:
         std::string array;
         /// \brief The definition's field name.
         std::string name;
+
+        /// \brief Indicates if the definition is a primitive type.
+        bool is_primitive;
+        /// \brief Indicates if the definition's type is a string.
+        bool is_string;
+        /// \brief Indicates if the definition is an array.
+        bool is_array;
+        /// \brief The size of the array. 0 indicates variable size.
+        uint32_t array_length;
+
         /// \brief The size of the definition, in bytes.
         uint32_t size;
 
@@ -91,10 +113,8 @@ private:
     definition_t m_definition;
     /// \brief A recursive method for adding new definitions to the definition tree.
     /// \param definition A reference to the definition being added.
-    /// \param type The type of the new definition.
-    /// \param array The array designator of the new definition.
-    /// \param name The name of the new definition.
-    void add_definition(definition_t& definition, std::string type, std::string array, std::string name);
+    /// \param component_definition The component information to add to the definition.
+    void add_definition(definition_t& definition, const component_t& component_definition);
     /// \brief A recursive method for printing a definition to a stringstream.
     /// \param stream The output stream to print to.
     /// \param definition The definition to print.
@@ -106,6 +126,8 @@ private:
     /// \param path The path to get the definition of.
     /// \returns If the path exists, a pointer to the definition, otherwise nullptr.
     const definition_t* get_definition(const std::string& path) const;
+
+    std::unordered_map<std::string, std::vector<uint8_t>> m_value_map;
 };
 
 }
