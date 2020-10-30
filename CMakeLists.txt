@@ -122,7 +122,7 @@ include_directories(
 # Declare a C++ library
 add_library(${PROJECT_NAME}
   src/message.cpp
-  src/parser.cpp
+  src/message_definition.cpp
 )
 
 ## Add cmake target dependencies of the library
