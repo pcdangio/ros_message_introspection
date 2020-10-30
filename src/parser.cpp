@@ -29,16 +29,44 @@ definition_t parser::parse_message(std::string message_type, std::string message
     // First extract message component types.
     parser::parse_components(message_type, message_definition);
 
-    // Create an output definition for the message.
-    definition_t primary_definition;
+    // Reset primary definition.
+    parser::m_definition = definition_t();
 
     // Add top level message to the definition, and let recursion handle the rest.
-    parser::add_definition(primary_definition, message_type, "", "");
+    parser::add_definition(parser::m_definition, message_type, "", "");
 
-    // print definition tree.
-    parser::print_definition(primary_definition, 0);
+    // Return a copy of the internal definition.
+    return parser::m_definition;
+}
+std::string parser::print_components() const
+{
+    std::stringstream output;
 
-    return primary_definition;
+    output << "component definitions:" << std::endl;
+    for(auto component = parser::m_component_definitions.begin(); component != parser::m_component_definitions.end(); ++component)
+    {
+        // Output component overall type.
+        output << component->first;
+
+        // Output component fields.
+        auto& fields = component->second;
+        for(auto field = fields.begin(); field != fields.end(); ++field)
+        {
+            output << "\tname = " << field->name << " type = " << field->type << " array = " << field->array << std::endl;
+        }
+    }
+
+    return output.str();
+}
+std::string parser::print_definition() const
+{
+    std::stringstream output;
+
+    output << "message definition:" << std::endl;
+
+    parser::print_definition(&output, parser::m_definition, 0);
+
+    return output.str();
 }
 
 bool parser::is_primitive_type(const std::string& type)
@@ -136,16 +164,6 @@ void parser::parse_components(std::string message_type, std::string message_defi
             }
         }
     }
-
-    std::cout << "message definition:" << std::endl;
-    for(auto msg_def = parser::m_component_definitions.begin(); msg_def != parser::m_component_definitions.end(); ++msg_def)
-    {
-        auto& field_defs = msg_def->second;
-        for(auto field_def = field_defs.begin(); field_def != field_defs.end(); ++field_def)
-        {
-            std::cout << msg_def->first << "." << field_def->name << " (" << field_def->type << ") " << "array:" << field_def->array << std::endl;
-        }
-    }
 }
 
 void parser::add_definition(definition_t& definition, std::string type, std::string array, std::string name)
@@ -186,18 +204,18 @@ void parser::add_definition(definition_t& definition, std::string type, std::str
     }
 }
 
-void parser::print_definition(definition_t& definition, uint32_t level)
+void parser::print_definition(std::iostream* stream, const definition_t& definition, uint32_t level) const
 {
     // Print definition's info in one line.
-    std::cout << "name = " << definition.name << " type = " << definition.type << " size = " << definition.size << " array = " << definition.array << std::endl;
+    *stream << "name = " << definition.name << " type = " << definition.type << " size = " << definition.size << " array = " << definition.array << std::endl;
 
     // Print sub definitions indented.
     for(auto field = definition.fields.begin(); field != definition.fields.end(); ++field)
     {
         for(uint32_t i = 0; i <= level; ++i)
         {
-            std::cout << "\t";
+            *stream << "\t";
         }
-        parser::print_definition(*field, level+1);
+        parser::print_definition(stream, *field, level+1);
     }
 }

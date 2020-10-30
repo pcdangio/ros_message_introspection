@@ -26,5 +26,7 @@ void message::impl::parse_message(const topic_tools::ShapeShifter& shape_shifter
 {
     parser m_parser;
 
-    auto components = m_parser.parse_message(shape_shifter.getDataType(), shape_shifter.getMessageDefinition());    
+    auto definition = m_parser.parse_message(shape_shifter.getDataType(), shape_shifter.getMessageDefinition());    
+
+    std::cout << m_parser.print_components() << std::endl << m_parser.print_definition() << std::endl;
 }

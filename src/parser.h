@@ -4,6 +4,7 @@
 #include "definition.h"
 
 #include <unordered_map>
+#include <iostream>
 
 class parser
 {
@@ -12,6 +13,9 @@ public:
 
     definition_t parse_message(std::string message_type, std::string message_definition);
 
+    std::string print_components() const;
+    std::string print_definition() const;
+
 private:
     std::unordered_map<std::string, uint32_t> m_primitive_types;
     bool is_primitive_type(const std::string& type);
@@ -19,8 +23,9 @@ private:
     std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
     void parse_components(std::string message_type, std::string message_definition);
 
+    definition_t m_definition;
     void add_definition(definition_t& definition, std::string type, std::string array, std::string name);
-    void print_definition(definition_t& definition, uint32_t level);
+    void print_definition(std::iostream* stream, const definition_t& definition, uint32_t level) const;
 };
 
 #endif
