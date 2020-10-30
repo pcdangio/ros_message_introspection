@@ -16,6 +16,7 @@ public:
     std::string print_components() const;
     std::string print_definition() const;
 
+    // LISTING
     struct field_t
     {
         std::string name;
@@ -24,7 +25,8 @@ public:
         bool is_primitive;
         std::string path;
     };
-    std::vector<field_t> list_fields(std::string parent_path = "") const;
+    bool list_fields(std::vector<field_t>& fields, std::string parent_path = "") const;
+    bool field_info(field_t& field_info, const std::string& path) const;
 
 private:
     // PRIMITIVES
@@ -54,6 +56,9 @@ private:
     definition_t m_definition;
     void add_definition(definition_t& definition, std::string type, std::string array, std::string name);
     void print_definition(std::iostream* stream, const definition_t& definition, uint32_t level) const;
+
+    // LISTING
+    const definition_t* get_definition(const std::string& path) const;
 };
 
 #endif

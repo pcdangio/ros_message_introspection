@@ -66,11 +66,11 @@ std::string message_definition::print_definition() const
 }
 
 // LISTING
-std::vector<message_definition::field_t> message_definition::list_fields(std::string parent_path) const
+const message_definition::definition_t* message_definition::get_definition(const std::string& path) const
 {
     // Split up the path into its compoent pieces.
     boost::char_separator<char> delimiter(".");
-    boost::tokenizer<boost::char_separator<char>> tokenizer(parent_path, delimiter);
+    boost::tokenizer<boost::char_separator<char>> tokenizer(path, delimiter);
     std::vector<std::string> path_parts(tokenizer.begin(), tokenizer.end());
 
     // Iterate over path parts to traverse the tree.
@@ -94,13 +94,27 @@ std::vector<message_definition::field_t> message_definition::list_fields(std::st
         // Quit if the path part was not found.
         if(!path_part_found)
         {
-            return std::vector<field_t>();
+            return nullptr;
         }
     }
 
-    // If this point reached, the full path has been found.
+    return parent_definition;
+}
+bool message_definition::list_fields(std::vector<message_definition::field_t>&  fields, std::string parent_path) const
+{
+    // Get the definition for the parent path.
+    auto parent_definition = message_definition::get_definition(parent_path);
+
+    // If the parent path couldn't be found, quit.
+    if(!parent_definition)
+    {
+        return false;
+    }
+
+    // Clear the output vector.
+    fields.clear();
+
     // Populate the fields output from the parent definition.
-    std::vector<field_t> output;
     for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
     {
         // Create output field.
@@ -122,10 +136,30 @@ std::vector<message_definition::field_t> message_definition::list_fields(std::st
         output_field.path += field->name;
 
         // Add to output.
-        output.push_back(output_field);
+        fields.push_back(output_field);
     }
 
-    return output;
+    return true;
+}
+bool message_definition::field_info(field_t& field_info, const std::string& path) const
+{
+    // Get definition for path.
+    auto definition = message_definition::get_definition(path);
+
+    // Quit if path wasn't found.
+    if(!definition)
+    {
+        return false;
+    }
+
+    // Set the field info.
+    field_info.type = definition->type;
+    field_info.is_primitive = message_definition::is_primitive_type(definition->type);
+    field_info.array = definition->array;
+    field_info.name = definition->name;
+    field_info.path = path;
+
+    return true;
 }
 
 // PRIMITIVES

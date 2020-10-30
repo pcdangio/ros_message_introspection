@@ -28,9 +28,18 @@ void message::impl::parse_message(const topic_tools::ShapeShifter& shape_shifter
 
     std::cout << m_definition.print_components() << std::endl << m_definition.print_definition() << std::endl;
 
-    auto fields = m_definition.list_fields("poses.pose.position");
-    for(auto field = fields.begin(); field != fields.end(); ++field)
+    std::vector<message_definition::field_t> fields;
+    if(m_definition.list_fields(fields, "poses.pose.position"))
     {
-        std::cout << field->path << std::endl;
+        for(auto field = fields.begin(); field != fields.end(); ++field)
+        {
+            std::cout << "path: " << field->path << " type: " << field->type << " array: " << field->array << " primitive: " << field->is_primitive << std::endl;
+        }
+    }
+
+    message_definition::field_t field;
+    if(m_definition.field_info(field, "poses.pose"))
+    {
+        std::cout << "path: " << field.path << " type: " << field.type << " array: " << field.array << " primitive: " << field.is_primitive << std::endl;
     }
 }
