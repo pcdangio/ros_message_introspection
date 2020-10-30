@@ -1,6 +1,5 @@
 #include "message_definition.h"
 
-#include <sstream>
 #include <boost/tokenizer.hpp>
 
 using namespace message_introspection;
@@ -62,7 +61,7 @@ std::string message_definition::print_definition() const
     std::stringstream output;
 
     // Recursively print the tree.
-    message_definition::print_definition(&output, message_definition::m_definition, 0);
+    message_definition::print_definition(output, message_definition::m_definition, 0);
 
     return output.str();
 }
@@ -70,7 +69,7 @@ std::string message_definition::print_definition() const
 // LISTING
 const message_definition::definition_t* message_definition::get_definition(const std::string& path) const
 {
-    // Split up the path into its compoent pieces.
+    // Split up the path into its component pieces.
     boost::char_separator<char> delimiter(".");
     boost::tokenizer<boost::char_separator<char>> tokenizer(path, delimiter);
     std::vector<std::string> path_parts(tokenizer.begin(), tokenizer.end());
@@ -300,17 +299,17 @@ void message_definition::add_definition(definition_t& definition, std::string ty
         }
     }
 }
-void message_definition::print_definition(std::iostream* stream, const definition_t& definition, uint32_t level) const
+void message_definition::print_definition(std::stringstream& stream, const definition_t& definition, uint32_t level) const
 {
     // Print definition's info in one line.
-    *stream << "name = " << definition.name << " type = " << definition.type << " size = " << definition.size << " array = " << definition.array << std::endl;
+    stream << "name = " << definition.name << " type = " << definition.type << " size = " << definition.size << " array = " << definition.array << std::endl;
 
     // Print sub definitions indented.
     for(auto field = definition.fields.begin(); field != definition.fields.end(); ++field)
     {
         for(uint32_t i = 0; i <= level; ++i)
         {
-            *stream << "\t";
+            stream << "\t";
         }
         message_definition::print_definition(stream, *field, level+1);
     }
