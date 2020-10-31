@@ -11,7 +11,9 @@ namespace message_introspection {
 class definition_t
 {
 public:
-    // CONSTRUCTOR
+    // CONSTRUCTORS
+    /// \brief Creates an empty definition instance.
+    definition_t();
     /// \brief Creates a new definition instance.
     /// \param type The definition's type string.
     /// \param array The definition's array type string.
@@ -49,44 +51,53 @@ public:
     // TYPE
     /// \brief Gets the type string of the definition.
     /// \returns The type as a string.
-    std::string type();
+    std::string type() const;
+    /// \brief Sets the type of the definition.
+    /// \param new_type The new type string to assign.
+    void type(const std::string& new_type);
     /// \brief Indicates if the definition is a primitive type.
     /// \returns TRUE if the definition is a primitive type, otherwise FALSE.
-    bool is_primitive();
+    bool is_primitive() const;
     /// \brief Gets the primitive type of the definition.
     /// \returns The primitive type of the definition.
-    primitive_type_t primitive_type();
+    primitive_type_t primitive_type() const;
     /// \brief Gets the size of the definition in bytes.
     /// \returns The size of the definition.
-    uint32_t size();
+    uint32_t size() const;
+    /// \brief Sets the size of the definition.
+    /// \param new_size The new size of the definition in bytes.
+    void size(uint32_t new_size);
 
     // ARRAY
+    /// \brief Gets the array type as a string.
+    /// \returns The array type.
+    std::string array() const;
     /// \brief Indicates if the definition is an array.
     /// \returns TRUE if the definition is an array, otherwise FALSE.
-    bool is_array();
+    bool is_array() const;
     /// \brief Gets the array type of the definition.
     /// \returns The array type of the definition.
-    array_type_t array_type();
+    array_type_t array_type() const;
     /// \brief Gets the size of the definitions array.
     /// \returns The size of the array.
-    uint32_t array_size();
+    uint32_t array_size() const;
 
     // NAME
     /// \brief Gets the name of the definition.
     /// \returns The name of the definition.
-    std::string name();
+    std::string name() const;
 
-    // UPDATE
-    /// \brief Updates the type of the definition.
-    /// \param new_type The new type string to assign.
-    void update_type(const std::string& new_type);
-    /// \brief Updates the size of the definition.
-    /// \param new_size The new size of the definition in bytes.
-    void update_size(uint32_t new_size);
+    // PATH
+    /// \brief Gets the definition's full path.
+    /// \returns The full path of the definition.
+    std::string path() const;
+    /// \brief Sets the definition's parent path.
+    /// \returns The definition's parent path.
+    void set_parent_path(const std::string& parent_path);
 
 private:
     // TYPE
-    /// \brief The definition's type.
+    /// \brief The definition's type string.
     std::string m_type;
     /// \brief The definition's primitive type.
     primitive_type_t m_primitive_type;
@@ -94,6 +105,8 @@ private:
     uint32_t m_size;
 
     // ARRAY
+    /// \brief The definition's array type string.
+    std::string m_array;
     /// \brief The definition's array type.
     array_type_t m_array_type;
     /// \brief The definition's array size.
@@ -102,6 +115,10 @@ private:
     // NAME
     /// \brief The definition's name.
     std::string m_name;
+
+    // PATH
+    /// \brief The definition's full path.
+    std::string m_path;
 };
 
 }

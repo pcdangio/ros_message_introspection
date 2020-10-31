@@ -3,11 +3,24 @@
 using namespace message_introspection;
 
 // CONSTRUCTOR
+definition_t::definition_t()
+{
+    definition_t::m_type = "";
+    definition_t::m_primitive_type = definition_t::primitive_type_t::NON_PRIMITIVE;
+    definition_t::m_size = 0;
+    definition_t::m_array = "";
+    definition_t::m_array_type = definition_t::array_type_t::NONE;
+    definition_t::m_array_size = 0;
+    definition_t::m_name = "";
+    definition_t::m_path = "";
+}
 definition_t::definition_t(const std::string& type, const std::string& array, const std::string& name)
 {
     // Update the definition's type.
-    definition_t::update_type(type);
+    definition_t::type(type);
 
+    // Store the array.
+    definition_t::m_array = array;
     // Parse the array.
     if(array.empty())
     {
@@ -31,48 +44,17 @@ definition_t::definition_t(const std::string& type, const std::string& array, co
     
     // Store the name.
     definition_t::m_name = name;
+
+    // Initialize the path.
+    definition_t::set_parent_path("");
 }
 
 // TYPE
-std::string definition_t::type()
+std::string definition_t::type() const
 {
     return definition_t::m_type;
 }
-bool definition_t::is_primitive()
-{
-    return definition_t::m_primitive_type != definition_t::primitive_type_t::NON_PRIMITIVE;
-}
-definition_t::primitive_type_t definition_t::primitive_type()
-{
-    return definition_t::m_primitive_type;
-}
-uint32_t definition_t::size()
-{
-    return definition_t::m_size;
-}
-
-// ARRAY
-bool definition_t::is_array()
-{
-    return definition_t::m_array_type != definition_t::array_type_t::NONE;
-}
-definition_t::array_type_t definition_t::array_type()
-{
-    return definition_t::m_array_type;
-}
-uint32_t definition_t::array_size()
-{
-    return definition_t::m_array_size;
-}
-
-// NAME
-std::string definition_t::name()
-{
-    return definition_t::m_name;
-}
-
-// UPDATE
-void definition_t::update_type(const std::string& new_type)
+void definition_t::type(const std::string& new_type)
 {
     // Store the type.
     definition_t::m_type = new_type;
@@ -153,8 +135,61 @@ void definition_t::update_type(const std::string& new_type)
         definition_t::m_size = 0;
     }
 }
-void definition_t::update_size(uint32_t new_size)
+bool definition_t::is_primitive() const
+{
+    return definition_t::m_primitive_type != definition_t::primitive_type_t::NON_PRIMITIVE;
+}
+definition_t::primitive_type_t definition_t::primitive_type() const
+{
+    return definition_t::m_primitive_type;
+}
+uint32_t definition_t::size() const
+{
+    return definition_t::m_size;
+}
+void definition_t::size(uint32_t new_size)
 {
     // Update the size.
     definition_t::m_size = new_size;
+}
+
+// ARRAY
+std::string definition_t::array() const
+{
+    return definition_t::m_array;
+}
+bool definition_t::is_array() const
+{
+    return definition_t::m_array_type != definition_t::array_type_t::NONE;
+}
+definition_t::array_type_t definition_t::array_type() const
+{
+    return definition_t::m_array_type;
+}
+uint32_t definition_t::array_size() const
+{
+    return definition_t::m_array_size;
+}
+
+// NAME
+std::string definition_t::name() const
+{
+    return definition_t::m_name;
+}
+
+// PATH
+std::string definition_t::path() const
+{
+    return definition_t::m_path;
+}
+void definition_t::set_parent_path(const std::string& parent_path)
+{
+    if(!parent_path.empty())
+    {
+        definition_t::m_path = parent_path + "." + definition_t::m_name;
+    }
+    else
+    {
+        definition_t::m_path = definition_t::m_name;
+    }
 }

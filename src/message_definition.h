@@ -3,7 +3,7 @@
 #ifndef MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
 #define MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
 
-#include "message_introspection/field_info.h"
+#include "message_introspection/definition.h"
 
 #include <string>
 #include <vector>
@@ -28,7 +28,7 @@ public:
     std::string print_components() const;
     /// \brief Prints the message's definition tree to a string.
     /// \returns The message's definition tree.
-    std::string print_definition() const;
+    std::string print_definition_tree() const;
 
     // LISTING
     /// \brief Lists the fields under a parent path.
@@ -37,47 +37,22 @@ public:
     /// \returns TRUE if the parent path exists, otherwise FALSE.
     /// \details This method only populates the fields output if the path exists.
     /// An example parent path is pose.position
-    bool list_fields(std::vector<field_info_t>& fields, std::string parent_path = "") const;
+    bool list_fields(std::vector<definition_t>& fields, std::string parent_path = "") const;
     /// \brief Gets the description of a single field.
     /// \param field_info The field info object to capture the result in.
     /// \param path The absolute path of the field to get the description of.
     /// \returns TRUE if the path exists, otherwise FALSE.
     /// \details This method only populates the field_info output if the path exists.
     /// An example path is pose.position.x
-    bool field_info(field_info_t& field_info, const std::string& path) const;
+    bool field_info(definition_t& field_info, const std::string& path) const;
 
     void new_message(const std::vector<uint8_t>& serialized_data);
     bool get_field(double& value, const std::string& path) const;
 
 private:
-    // PRIMITIVES
-    /// \brief A map of primitive type strings and their size information.
-    std::unordered_map<std::string, uint32_t> m_primitive_types;
-    /// \brief Checks if a type is a primitive type.
-    bool is_primitive_type(const std::string& type) const;
-
     // COMPONENTS
-    /// \brief A component description.
-    struct component_t
-    {
-        /// \brief The component's type.
-        std::string type;
-        /// \brief The component's array designation.
-        std::string array;
-        /// \brief The component's field name.
-        std::string name;
-
-        /// \brief Indicates if the definition is a primitive type.
-        bool is_primitive;
-        /// \brief Indicates if the definition's type is a string.
-        bool is_string;
-        /// \brief Indicates if the definition is an array.
-        bool is_array;
-        /// \brief The size of the array. 0 indicates variable size.
-        uint32_t array_length;
-    };
     /// \brief A map of component message definitions (top level only)
-    std::unordered_map<std::string, std::vector<component_t>> m_component_definitions;
+    std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
     /// \brief Parses a message definition string into the component definition map.
     /// \param message_type The ROS message type string.
     /// \param message_definition The ROS message definition string.
@@ -85,49 +60,32 @@ private:
 
     // DEFINITION
     /// \brief A message definition tree.
-    struct definition_t
+    struct definition_tree_t
     {
-        /// \brief The definition's type.
-        std::string type;
-        /// \brief The definition's array designation.
-        std::string array;
-        /// \brief The definition's field name.
-        std::string name;
+        /// \brief The message's definition.
+        definition_t definition;
 
-        /// \brief Indicates if the definition is a primitive type.
-        bool is_primitive;
-        /// \brief Indicates if the definition's type is a string.
-        bool is_string;
-        /// \brief Indicates if the definition is an array.
-        bool is_array;
-        /// \brief The size of the array. 0 indicates variable size.
-        uint32_t array_length;
-
-        /// \brief The size of the definition, in bytes.
-        uint32_t size;
-
-        /// \brief The fields belonging to this definition.
-        std::vector<definition_t> fields;
+        /// \brief The fields belonging to this message.
+        std::vector<definition_tree_t> fields;
     };
     /// \brief The message's calculated definition tree.
-    definition_t m_definition;
+    definition_tree_t m_definition_tree;
     /// \brief A recursive method for adding new definitions to the definition tree.
-    /// \param definition A reference to the definition being added.
-    /// \param component_definition The component information to add to the definition.
-    void add_definition(definition_t& definition, const component_t& component_definition);
-    /// \brief A recursive method for printing a definition to a stringstream.
+    /// \param parent_path The parent path of the definition tree being added.
+    /// \param definition_tree A reference to the definition tree to add to.
+    /// \param component_definition The component information to add to the definition's sub tree.
+    void add_definition(const std::string& parent_path, definition_tree_t& definition_tree, const definition_t& component_definition);
+    /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
-    /// \param definition The definition to print.
+    /// \param definition The definition tree to print.
     /// \param level The current depth of the tree.
-    void print_definition(std::stringstream& stream, const definition_t& definition, uint32_t level) const;
+    void print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const;
 
     // LISTING
-    /// \brief A method for getting the definition of a specified path.
-    /// \param path The path to get the definition of.
-    /// \returns If the path exists, a pointer to the definition, otherwise nullptr.
-    const definition_t* get_definition(const std::string& path) const;
-
-    std::unordered_map<std::string, std::vector<uint8_t>> m_value_map;
+    /// \brief A method for getting the definition tree of a specified path.
+    /// \param path The path to get the definition tree of.
+    /// \returns If the path exists, a pointer to the definition tree, otherwise nullptr.
+    const definition_tree_t* get_definition_tree(const std::string& path) const;
 };
 
 }
