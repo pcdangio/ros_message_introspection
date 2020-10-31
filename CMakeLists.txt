@@ -122,6 +122,7 @@ include_directories(
 # Declare a C++ library
 add_library(${PROJECT_NAME}
   src/message.cpp
+  src/definition.cpp
   src/message_definition.cpp
 )
 
