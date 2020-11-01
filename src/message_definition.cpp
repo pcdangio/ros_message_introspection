@@ -6,16 +6,10 @@
 using namespace message_introspection;
 
 // CONSTRUCTORS
-message_definition::message_definition(const std::string& message_type, const std::string& message_definition)
+message_definition::message_definition()
 {
     // Initialize serialized bytes.
     message_definition::m_bytes = nullptr;
-
-    // First extract message component types.
-    message_definition::parse_components(message_type, message_definition);
-
-    // Add top level message to the definition, and let recursion handle the rest.
-    message_definition::add_definition("", message_definition::m_definition_tree, definition_t(message_type, "", ""));
 }
 message_definition::~message_definition()
 {
@@ -23,9 +17,16 @@ message_definition::~message_definition()
     delete [] message_definition::m_bytes;
 }
 
-// MESSAGES
+// MESSAGE
 void message_definition::new_message(const topic_tools::ShapeShifter& message)
 {
+    // First register the message if it hasn't been registered already.
+    if(!message_definition::is_registered(message.getMD5Sum()))
+    {
+        // Register message.
+        message_definition::register_message(message.getMD5Sum(), message.getDataType(), message.getMessageDefinition());
+    }
+
     // Clear old data.
     delete [] message_definition::m_bytes;
 
@@ -37,87 +38,24 @@ void message_definition::new_message(const topic_tools::ShapeShifter& message)
     ros::serialization::OStream stream(message_definition::m_bytes, message_length);
     ros::serialization::serialize(stream, message);
 
-    for(uint32_t i = 0; i < message_length; ++i)
-    {
-        std::cout << (int32_t)message_definition::m_bytes[i] << std::endl;
-    }
-    std::cout << std::endl;
-
     // Update serialized positions of definition tree.
     uint32_t current_position = 0;
     message_definition::update_positions(message_definition::m_definition_tree, current_position);
 }
-void message_definition::update_positions(definition_tree_t& definition_tree, uint32_t& current_position)
+void message_definition::register_message(const std::string& md5, const std::string& type, const std::string& definition)
 {
-    // If this is a primitive type, update it's serialized position.
-    if(definition_tree.definition.is_primitive())
-    {
-        definition_tree.definition.update_serialized_position(current_position);
-        std::cout << definition_tree.definition.path() << "\t position = " << current_position << std::endl;
-    }
+    // Extract message component types.
+    message_definition::parse_components(type, definition);
 
-    // Check if this field is an array or repeated field, and get it's length.
-    uint32_t array_length;
-    switch(definition_tree.definition.array_type())
-    {
-        case definition_t::array_type_t::NONE:
-        {
-            array_length = 1;
-            break;
-        }
-        case definition_t::array_type_t::FIXED_LENGTH:
-        {
-            array_length = definition_tree.definition.array_length();
-            break;
-        }
-        case definition_t::array_type_t::VARIABLE_LENGTH:
-        {
-            // Read the length, converting from little endian.
-            array_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
-            // Update current position to account for the length bytes;
-            current_position += 4;
-            // Update the definition's array length.
-            definition_tree.definition.update_array_length(array_length);
-            break;
-        }
-    }
+    // Add top level message to the definition, and let recursion handle the rest.
+    message_definition::add_definition("", message_definition::m_definition_tree, definition_t(type, "", ""));
 
-    // Update the current position.
-    if(definition_tree.definition.is_primitive())
-    {
-        // Check if string.
-        if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
-        {
-            // Read possibly repeated string.
-            for(uint32_t a = 0; a < array_length; ++a)
-            {
-                // Read string length, converting from little endian.
-                uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
-                // Update current position.
-                current_position += 4 + string_length;
-            }
-        }
-        else
-        {
-            // Update current position with possibly repeated type.
-            current_position += array_length * definition_tree.definition.size();
-        }
-    }
-    else
-    {
-        // Definition tree is not a primitive type, and thus has fields.
-
-        // Update current position over this possibly repeated field.
-        for(uint32_t a = 0; a < array_length; ++a)
-        {
-            // Iterate through fields.
-            for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
-            {
-                // Recurse into field.
-                message_definition::update_positions(*field, current_position);
-            }
-        }
-    }
+    // Store MD5.
+    message_definition::m_md5 = md5;    
+}
+bool message_definition::is_registered(const std::string& md5)
+{
+    return (message_definition::m_md5.compare(md5) == 0);
 }
 
 // LISTING
@@ -364,6 +302,77 @@ void message_definition::add_definition(const std::string& parent_path, definiti
 
         // Update the top level size.
         definition_tree.definition.update_size(total_size);
+    }
+}
+void message_definition::update_positions(definition_tree_t& definition_tree, uint32_t& current_position)
+{
+    // If this is a primitive type, update it's serialized position.
+    if(definition_tree.definition.is_primitive())
+    {
+        definition_tree.definition.update_serialized_position(current_position);
+    }
+
+    // Check if this field is an array or repeated field, and get it's length.
+    uint32_t array_length;
+    switch(definition_tree.definition.array_type())
+    {
+        case definition_t::array_type_t::NONE:
+        {
+            array_length = 1;
+            break;
+        }
+        case definition_t::array_type_t::FIXED_LENGTH:
+        {
+            array_length = definition_tree.definition.array_length();
+            break;
+        }
+        case definition_t::array_type_t::VARIABLE_LENGTH:
+        {
+            // Read the length, converting from little endian.
+            array_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
+            // Update current position to account for the length bytes;
+            current_position += 4;
+            // Update the definition's array length.
+            definition_tree.definition.update_array_length(array_length);
+            break;
+        }
+    }
+
+    // Update the current position.
+    if(definition_tree.definition.is_primitive())
+    {
+        // Check if string.
+        if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
+        {
+            // Read possibly repeated string.
+            for(uint32_t a = 0; a < array_length; ++a)
+            {
+                // Read string length, converting from little endian.
+                uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
+                // Update current position.
+                current_position += 4 + string_length;
+            }
+        }
+        else
+        {
+            // Update current position with possibly repeated type.
+            current_position += array_length * definition_tree.definition.size();
+        }
+    }
+    else
+    {
+        // Definition tree is not a primitive type, and thus has fields.
+
+        // Update current position over this possibly repeated field.
+        for(uint32_t a = 0; a < array_length; ++a)
+        {
+            // Iterate through fields.
+            for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
+            {
+                // Recurse into field.
+                message_definition::update_positions(*field, current_position);
+            }
+        }
     }
 }
 void message_definition::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const

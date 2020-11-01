@@ -20,13 +20,13 @@ class message_definition
 {
 public:
     // CONSTRUCTORS
-    /// \brief Parses a message definition into a new instance.
-    /// \param message_type The type string of the ROS message.
-    /// \param message_definition The definition string of the ROS message.
-    message_definition(const std::string& message_type, const std::string& message_definition);
+    /// \brief Creates a new message_definition instance.
+    message_definition();
     ~message_definition();
 
     // NEW MESSAGE
+    /// \brief Sets a new message instance to read from.
+    /// \param message The new message instance.
     void new_message(const topic_tools::ShapeShifter& message);
 
     // LISTING
@@ -60,6 +60,22 @@ public:
     std::string print_definition_tree() const;
 
 private:
+    // MESSAGE
+    /// \brief Registers a message.
+    /// \param md5 The message's MD5 hash.
+    /// \param type The message's data type string.
+    /// \param definition The message's definition string.
+    /// \details This method will update the component listing and definition tree for the message type.
+    void register_message(const std::string& md5, const std::string& type, const std::string& definition);
+    /// \brief Indicates if a message MD5 hash is registered or not.
+    /// \param md5 The MD5 hash to check.
+    /// \returns TRUE if the MD5 hash is registered, otherwise FALSE.
+    bool is_registered(const std::string& md5);
+    /// \brief Stores the currently registered message MD5 hash.
+    std::string m_md5;
+    /// \brief Stores the serialized bytes of the most recent message instance.
+    uint8_t* m_bytes;
+
     // COMPONENTS
     /// \brief A map of component message definitions (top level only)
     std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
@@ -76,6 +92,10 @@ private:
     /// \param definition_tree A reference to the definition tree to add to.
     /// \param component_definition The component information to add to the definition's sub tree.
     void add_definition(const std::string& parent_path, definition_tree_t& definition_tree, const definition_t& component_definition);
+    /// \brief Recursively updates the serialized byte positions of fields in the definition tree using the current message instance.
+    /// \param definition_tree The definition tree to calculate positions for.
+    /// \param current_position The current reading position in the message instance's serialized bytes.
+    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position);
     /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
     /// \param definition The definition tree to print.
@@ -87,12 +107,6 @@ private:
     /// \param path The path to get the definition tree of.
     /// \returns If the path exists, a pointer to the definition tree, otherwise nullptr.
     const definition_tree_t* get_definition_tree(const std::string& path) const;
-
-    // POSITIONING
-    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position);
-
-    // STORAGE
-    uint8_t* m_bytes;
 };
 
 }
