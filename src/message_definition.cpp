@@ -1,4 +1,4 @@
-#include "message_definition.h"
+#include "message_introspection/message_definition.h"
 
 #include <boost/tokenizer.hpp>
 #include <endian.h>
