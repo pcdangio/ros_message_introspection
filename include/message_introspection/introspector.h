@@ -1,7 +1,7 @@
-/// \file message_definition.h
-/// \brief Defines the message_introspection::message_definition class.
-#ifndef MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
-#define MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
+/// \file introspector.h
+/// \brief Defines the message_introspection::introspector class.
+#ifndef MESSAGE_INTROSPECTION___INTROSPECTOR_H
+#define MESSAGE_INTROSPECTION___INTROSPECTOR_H
 
 #include "message_introspection/definition.h"
 #include "message_introspection/definition_tree.h"
@@ -13,16 +13,17 @@
 #include <unordered_map>
 #include <sstream>
 
+/// \brief Code components for message introspection.
 namespace message_introspection {
 
 /// \brief Parses and provides the defintion of a message.
-class message_definition
+class introspector
 {
 public:
     // CONSTRUCTORS
-    /// \brief Creates a new message_definition instance.
-    message_definition();
-    ~message_definition();
+    /// \brief Creates a new introspector instance.
+    introspector();
+    ~introspector();
 
     // NEW MESSAGE
     /// \brief Sets a new message instance to read from.
@@ -81,8 +82,8 @@ private:
     std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
     /// \brief Parses a message definition string into the component definition map.
     /// \param message_type The ROS message type string.
-    /// \param message_definition The ROS message definition string.
-    void parse_components(std::string message_type, std::string message_definition);
+    /// \param introspector The ROS message definition string.
+    void parse_components(std::string message_type, std::string introspector);
 
     // DEFINITION
     /// \brief The message's calculated definition tree.

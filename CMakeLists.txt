@@ -121,9 +121,8 @@ include_directories(
 
 # Declare a C++ library
 add_library(${PROJECT_NAME}
-  src/message.cpp
   src/definition.cpp
-  src/message_definition.cpp
+  src/introspector.cpp
 )
 
 ## Add cmake target dependencies of the library
