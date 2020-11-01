@@ -6,6 +6,8 @@
 #include "message_introspection/definition.h"
 #include "message_introspection/definition_tree.h"
 
+#include <topic_tools/shape_shifter.h>
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -22,14 +24,10 @@ public:
     /// \param message_type The type string of the ROS message.
     /// \param message_definition The definition string of the ROS message.
     message_definition(const std::string& message_type, const std::string& message_definition);
+    ~message_definition();
 
-    // PRINTING
-    /// \brief Prints the message's component definitions to a string.
-    /// \returns The component definitions.
-    std::string print_components() const;
-    /// \brief Prints the message's definition tree to a string.
-    /// \returns The message's definition tree.
-    std::string print_definition_tree() const;
+    // NEW MESSAGE
+    void new_message(const topic_tools::ShapeShifter& message);
 
     // LISTING
     /// \brief Gets a copy of the message's definition tree.
@@ -50,8 +48,16 @@ public:
     /// An example path is pose.position.x
     bool field_info(definition_t& field_info, const std::string& path) const;
 
-    void new_message(const std::vector<uint8_t>& serialized_data);
+    // GET
     bool get_field(double& value, const std::string& path) const;
+
+    // PRINTING
+    /// \brief Prints the message's component definitions to a string.
+    /// \returns The component definitions.
+    std::string print_components() const;
+    /// \brief Prints the message's definition tree to a string.
+    /// \returns The message's definition tree.
+    std::string print_definition_tree() const;
 
 private:
     // COMPONENTS
@@ -81,6 +87,12 @@ private:
     /// \param path The path to get the definition tree of.
     /// \returns If the path exists, a pointer to the definition tree, otherwise nullptr.
     const definition_tree_t* get_definition_tree(const std::string& path) const;
+
+    // POSITIONING
+    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position);
+
+    // STORAGE
+    uint8_t* m_bytes;
 };
 
 }

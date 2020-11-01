@@ -1,50 +1,123 @@
 #include "message_definition.h"
 
 #include <boost/tokenizer.hpp>
+#include <endian.h>
 
 using namespace message_introspection;
 
 // CONSTRUCTORS
 message_definition::message_definition(const std::string& message_type, const std::string& message_definition)
 {
+    // Initialize serialized bytes.
+    message_definition::m_bytes = nullptr;
+
     // First extract message component types.
     message_definition::parse_components(message_type, message_definition);
 
     // Add top level message to the definition, and let recursion handle the rest.
     message_definition::add_definition("", message_definition::m_definition_tree, definition_t(message_type, "", ""));
 }
-
-// PRINTING
-std::string message_definition::print_components() const
+message_definition::~message_definition()
 {
-    // Create output stream.
-    std::stringstream output;
+    // Clean up message bytes.
+    delete [] message_definition::m_bytes;
+}
 
-    // Iterate over component definitions.
-    for(auto component = message_definition::m_component_definitions.begin(); component != message_definition::m_component_definitions.end(); ++component)
+// MESSAGES
+void message_definition::new_message(const topic_tools::ShapeShifter& message)
+{
+    // Clear old data.
+    delete [] message_definition::m_bytes;
+
+    // Get serialized length and set up bytes for capture.
+    uint32_t message_length = ros::serialization::serializationLength(message);
+    message_definition::m_bytes = new uint8_t[message_length];
+
+    // Serialize data into byte storage.
+    ros::serialization::OStream stream(message_definition::m_bytes, message_length);
+    ros::serialization::serialize(stream, message);
+
+    for(uint32_t i = 0; i < message_length; ++i)
     {
-        // Output component overall type.
-        output << component->first << std::endl;;
+        std::cout << (int32_t)message_definition::m_bytes[i] << std::endl;
+    }
+    std::cout << std::endl;
 
-        // Output component fields.
-        auto& fields = component->second;
-        for(auto field = fields.begin(); field != fields.end(); ++field)
+    // Update serialized positions of definition tree.
+    uint32_t current_position = 0;
+    message_definition::update_positions(message_definition::m_definition_tree, current_position);
+}
+void message_definition::update_positions(definition_tree_t& definition_tree, uint32_t& current_position)
+{
+    // If this is a primitive type, update it's serialized position.
+    if(definition_tree.definition.is_primitive())
+    {
+        definition_tree.definition.update_serialized_position(current_position);
+        std::cout << definition_tree.definition.path() << "\t position = " << current_position << std::endl;
+    }
+
+    // Check if this field is an array or repeated field, and get it's length.
+    uint32_t array_length;
+    switch(definition_tree.definition.array_type())
+    {
+        case definition_t::array_type_t::NONE:
         {
-            output << "\tname = " << field->name() << " type = " << field->type() << " array = " << field->array() << std::endl;
+            array_length = 1;
+            break;
+        }
+        case definition_t::array_type_t::FIXED_LENGTH:
+        {
+            array_length = definition_tree.definition.array_length();
+            break;
+        }
+        case definition_t::array_type_t::VARIABLE_LENGTH:
+        {
+            // Read the length, converting from little endian.
+            array_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
+            // Update current position to account for the length bytes;
+            current_position += 4;
+            // Update the definition's array length.
+            definition_tree.definition.update_array_length(array_length);
+            break;
         }
     }
 
-    return output.str();
-}
-std::string message_definition::print_definition_tree() const
-{
-    // Create output stream.
-    std::stringstream output;
+    // Update the current position.
+    if(definition_tree.definition.is_primitive())
+    {
+        // Check if string.
+        if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
+        {
+            // Read possibly repeated string.
+            for(uint32_t a = 0; a < array_length; ++a)
+            {
+                // Read string length, converting from little endian.
+                uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&message_definition::m_bytes[current_position]));
+                // Update current position.
+                current_position += 4 + string_length;
+            }
+        }
+        else
+        {
+            // Update current position with possibly repeated type.
+            current_position += array_length * definition_tree.definition.size();
+        }
+    }
+    else
+    {
+        // Definition tree is not a primitive type, and thus has fields.
 
-    // Recursively print the tree.
-    message_definition::print_definition_tree(output, message_definition::m_definition_tree, 0);
-
-    return output.str();
+        // Update current position over this possibly repeated field.
+        for(uint32_t a = 0; a < array_length; ++a)
+        {
+            // Iterate through fields.
+            for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
+            {
+                // Recurse into field.
+                message_definition::update_positions(*field, current_position);
+            }
+        }
+    }
 }
 
 // LISTING
@@ -126,78 +199,43 @@ bool message_definition::field_info(definition_t& field_info, const std::string&
     return true;
 }
 
-void message_definition::new_message(const std::vector<uint8_t>& serialized_data)
-{
-//    message_definition::m_value_map.clear();
-
-//     // Iterate through the definition tree linearly to segment out the bytes.
-//     auto byte = serialized_data.cbegin();
-//     auto* definition = &(message_definition::m_definition);
-//     std::string parent_path = "";
-//     for(auto field = definition->fields.begin(); field != definition->fields.end(); ++field)
-//     {
-//         // Build current path.
-//         std::string current_path = "";
-//         if(!parent_path.empty())
-//         {
-//             current_path = parent_path + ".";
-//         }
-//         current_path += field->name;
-
-//         // Check if field is primitive.
-//         if(field->is_primitive)
-//         {
-//             // Check if field is string.
-//             if(field->is_string)
-//             {
-//                 // Field is string.
-//                 // Grab vector for this path.
-//                 auto& bytes = message_definition::m_value_map[current_path];
-
-//                 // Read string bytes from current position until null termination.
-//                 for(;byte != serialized_data.cend(); ++byte)
-//                 {
-//                     bytes.push_back(*byte);
-//                     if(*byte == 0)
-//                     {
-//                         break;
-//                     }
-//                 }
-
-//                 // Done reading this field. Continue to next field.
-//                 continue;
-//             }
-
-//             // Check if field is array.
-//             if(field->is_array)
-//             {
-//                 // Grab vector for this path.
-
-//                 // Check if fixed or variable size.
-//                 if(field->array_length > 0)
-//                 {
-//                     // Fixed size.
-//                     // Get total length of bytes for this array.
-//                     uint32_t data_length = field->array_length * field->size;
-//                     // Read bytes in.
-//                 }
-//                 else
-//                 {
-//                     // Variable size.
-//                 }
-//             }
-//         }
-//         else
-//         {
-//             // ? RECURSE ?
-//         }
-//     }
-}
-
 // GET
 bool message_definition::get_field(double& value, const std::string& path) const
 {
 
+}
+
+// PRINTING
+std::string message_definition::print_components() const
+{
+    // Create output stream.
+    std::stringstream output;
+
+    // Iterate over component definitions.
+    for(auto component = message_definition::m_component_definitions.begin(); component != message_definition::m_component_definitions.end(); ++component)
+    {
+        // Output component overall type.
+        output << component->first << std::endl;;
+
+        // Output component fields.
+        auto& fields = component->second;
+        for(auto field = fields.begin(); field != fields.end(); ++field)
+        {
+            output << "\tname = " << field->name() << " type = " << field->type() << " array = " << field->array() << std::endl;
+        }
+    }
+
+    return output.str();
+}
+std::string message_definition::print_definition_tree() const
+{
+    // Create output stream.
+    std::stringstream output;
+
+    // Recursively print the tree.
+    message_definition::print_definition_tree(output, message_definition::m_definition_tree, 0);
+
+    return output.str();
 }
 
 // COMPONENT PARSING
