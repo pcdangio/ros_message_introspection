@@ -285,7 +285,7 @@ void message_definition::parse_components(std::string message_type, std::string 
                     if(candidate->first.find(field->type()) != std::string::npos)
                     {
                         // Match found. Update partial type to full type.
-                        field->type(candidate->first);
+                        field->update_type(candidate->first);
                         // Stop search.
                         break;
                     }
@@ -300,7 +300,7 @@ void message_definition::add_definition(const std::string& parent_path, definiti
 {
     // Set the tree's definition.
     definition_tree.definition = component_definition;
-    definition_tree.definition.set_parent_path(parent_path);
+    definition_tree.definition.update_parent_path(parent_path);
 
     // Find the definition's type.
     if(!component_definition.is_primitive())
@@ -325,7 +325,7 @@ void message_definition::add_definition(const std::string& parent_path, definiti
         }
 
         // Update the top level size.
-        definition_tree.definition.size(total_size);
+        definition_tree.definition.update_size(total_size);
     }
 }
 void message_definition::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const

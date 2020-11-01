@@ -52,9 +52,6 @@ public:
     /// \brief Gets the type string of the definition.
     /// \returns The type as a string.
     std::string type() const;
-    /// \brief Sets the type of the definition.
-    /// \param new_type The new type string to assign.
-    void type(const std::string& new_type);
     /// \brief Indicates if the definition is a primitive type.
     /// \returns TRUE if the definition is a primitive type, otherwise FALSE.
     bool is_primitive() const;
@@ -64,9 +61,6 @@ public:
     /// \brief Gets the size of the definition in bytes.
     /// \returns The size of the definition.
     uint32_t size() const;
-    /// \brief Sets the size of the definition.
-    /// \param new_size The new size of the definition in bytes.
-    void size(uint32_t new_size);
 
     // ARRAY
     /// \brief Gets the array type as a string.
@@ -80,7 +74,7 @@ public:
     array_type_t array_type() const;
     /// \brief Gets the size of the definitions array.
     /// \returns The size of the array.
-    uint32_t array_size() const;
+    uint32_t array_length() const;
 
     // NAME
     /// \brief Gets the name of the definition.
@@ -91,9 +85,28 @@ public:
     /// \brief Gets the definition's full path.
     /// \returns The full path of the definition.
     std::string path() const;
-    /// \brief Sets the definition's parent path.
+
+    // POSITION
+    /// \brief Gets the definition's serialized byte position in the message.
+    /// \returns The serialized byte position.
+    uint32_t serialized_position() const;
+
+    // UPDATE
+    /// \brief Updates the definition's type.
+    /// \param type The new type string to assign.
+    void update_type(const std::string& type);
+    /// \brief Updates the size of the definition in bytes.
+    /// \param size The new size of the definition in bytes.
+    void update_size(uint32_t size);
+    /// \brief Updates the definition's array length.
+    /// \param length The new length to set.
+    void update_array_length(uint32_t length);
+    /// \brief Updates the definition's parent path.
     /// \returns The definition's parent path.
-    void set_parent_path(const std::string& parent_path);
+    void update_parent_path(const std::string& parent_path);
+    /// \brief Updates the definition's serialized byte position.
+    /// \param position The new position.
+    void update_serialized_position(uint32_t position);
 
 private:
     // TYPE
@@ -109,8 +122,8 @@ private:
     std::string m_array;
     /// \brief The definition's array type.
     array_type_t m_array_type;
-    /// \brief The definition's array size.
-    uint32_t m_array_size;
+    /// \brief The definition's array length.
+    uint32_t m_array_length;
 
     // NAME
     /// \brief The definition's name.
@@ -119,6 +132,10 @@ private:
     // PATH
     /// \brief The definition's full path.
     std::string m_path;
+
+    // POSITION
+    /// \brief The position of this definition in the serialized byte array.
+    uint32_t m_serialized_position;
 };
 
 }
