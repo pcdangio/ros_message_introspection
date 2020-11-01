@@ -10,14 +10,14 @@ definition_t::definition_t()
     definition_t::m_size = 0;
     definition_t::m_array = "";
     definition_t::m_array_type = definition_t::array_type_t::NONE;
-    definition_t::m_array_size = 0;
+    definition_t::m_array_length = 0;
     definition_t::m_name = "";
     definition_t::m_path = "";
 }
 definition_t::definition_t(const std::string& type, const std::string& array, const std::string& name)
 {
     // Update the definition's type.
-    definition_t::type(type);
+    definition_t::update_type(type);
 
     // Store the array.
     definition_t::m_array = array;
@@ -25,13 +25,13 @@ definition_t::definition_t(const std::string& type, const std::string& array, co
     if(array.empty())
     {
         definition_t::m_array_type = definition_t::array_type_t::NONE;
-        definition_t::m_array_size = 0;
+        definition_t::m_array_length = 0;
     }
     else if(array.compare("[]") == 0)
     {
         // Array is variable length.
         definition_t::m_array_type = definition_t::array_type_t::VARIABLE_LENGTH;
-        definition_t::m_array_size = 0;
+        definition_t::m_array_length = 0;
     }
     else
     {
@@ -39,14 +39,14 @@ definition_t::definition_t(const std::string& type, const std::string& array, co
         definition_t::m_array_type = definition_t::array_type_t::FIXED_LENGTH;
         // Parse out the array size.
         auto end_bracket_position = array.find_first_of(']');
-        definition_t::m_array_size = std::stoul(array.substr(1, end_bracket_position - 1));
+        definition_t::m_array_length = std::stoul(array.substr(1, end_bracket_position - 1));
     }
     
     // Store the name.
     definition_t::m_name = name;
 
     // Initialize the path.
-    definition_t::set_parent_path("");
+    definition_t::update_parent_path("");
 }
 
 // TYPE
