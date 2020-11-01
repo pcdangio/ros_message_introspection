@@ -4,6 +4,7 @@
 #define MESSAGE_INTROSPECTION___MESSAGE_DEFINITION_H
 
 #include "message_introspection/definition.h"
+#include "message_introspection/definition_tree.h"
 
 #include <string>
 #include <vector>
@@ -31,6 +32,9 @@ public:
     std::string print_definition_tree() const;
 
     // LISTING
+    /// \brief Gets a copy of the message's definition tree.
+    /// \returns The message's current definition tree.
+    definition_tree_t definition_tree() const;
     /// \brief Lists the fields under a parent path.
     /// \param fields The field info vector to capture the results in.
     /// \param parent_path The absolute path of the parent field delimited by '.'
@@ -59,15 +63,6 @@ private:
     void parse_components(std::string message_type, std::string message_definition);
 
     // DEFINITION
-    /// \brief A message definition tree.
-    struct definition_tree_t
-    {
-        /// \brief The message's definition.
-        definition_t definition;
-
-        /// \brief The fields belonging to this message.
-        std::vector<definition_tree_t> fields;
-    };
     /// \brief The message's calculated definition tree.
     definition_tree_t m_definition_tree;
     /// \brief A recursive method for adding new definitions to the definition tree.

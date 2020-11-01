@@ -48,7 +48,7 @@ std::string message_definition::print_definition_tree() const
 }
 
 // LISTING
-const message_definition::definition_tree_t* message_definition::get_definition_tree(const std::string& path) const
+const definition_tree_t* message_definition::get_definition_tree(const std::string& path) const
 {
     // Split up the path into its component pieces.
     boost::char_separator<char> delimiter(".");
@@ -81,6 +81,10 @@ const message_definition::definition_tree_t* message_definition::get_definition_
     }
 
     return parent_definition;
+}
+definition_tree_t message_definition::definition_tree() const
+{
+    return message_definition::m_definition_tree;
 }
 bool message_definition::list_fields(std::vector<definition_t>&  fields, std::string parent_path) const
 {
