@@ -50,7 +50,7 @@ void introspector::register_message(const std::string& md5, const std::string& t
     introspector::parse_components(type, definition);
 
     // Add top level message to the definition, and let recursion handle the rest.
-    introspector::m_definition_tree = definition_tree();
+    introspector::m_definition_tree = definition_tree_t();
     introspector::add_definition("", introspector::m_definition_tree, definition_t(type, "", ""));
 
     // Store MD5.
