@@ -30,27 +30,100 @@ public:
     /// \param message The new message instance.
     void new_message(const topic_tools::ShapeShifter& message);
 
-    // LISTING
+    // DEFINITION
     /// \brief Gets a copy of the message's definition tree.
     /// \returns The message's current definition tree.
     definition_tree_t definition_tree() const;
-    /// \brief Lists the fields under a parent path.
-    /// \param fields The field info vector to capture the results in.
-    /// \param parent_path The absolute path of the parent field delimited by '.'
-    /// \returns TRUE if the parent path exists, otherwise FALSE.
-    /// \details This method only populates the fields output if the path exists.
-    /// An example parent path is pose.position
-    bool list_fields(std::vector<definition_t>& fields, std::string parent_path = "") const;
-    /// \brief Gets the description of a single field.
-    /// \param field_info The field info object to capture the result in.
-    /// \param path The absolute path of the field to get the description of.
-    /// \returns TRUE if the path exists, otherwise FALSE.
-    /// \details This method only populates the field_info output if the path exists.
-    /// An example path is pose.position.x
-    bool field_info(definition_t& field_info, const std::string& path) const;
 
     // GET
-    bool get_field(double& value, const std::string& path) const;
+    /// \brief Indicates if the path to a field exists.
+    /// \param path The path to verify.
+    /// \returns TRUE if the path exists, otherwise false.
+    bool path_exists(const std::string& path) const;
+    /// \brief Gets a bool field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_bool(const std::string& path, bool& value) const;
+    /// \brief Gets an int8 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_int8(const std::string& path, int8_t& value) const;
+    /// \brief Gets an int16 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_int16(const std::string& path, int16_t& value) const;
+    /// \brief Gets an int32 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_int32(const std::string& path, int32_t& value) const;
+    /// \brief Gets an int64 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_int64(const std::string& path, int64_t& value) const;
+    /// \brief Gets a uint8 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_uint8(const std::string& path, uint8_t& value) const;
+    /// \brief Gets a uint16 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_uint16(const std::string& path, uint16_t& value) const;
+    /// \brief Gets a uint32 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_uint32(const std::string& path, uint32_t& value) const;
+    /// \brief Gets a uint64 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_uint64(const std::string& path, uint64_t& value) const;
+    /// \brief Gets a float32 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_float32(const std::string& path, float& value) const;
+    /// \brief Gets a float64 field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_float64(const std::string& path, double& value) const;
+    /// \brief Gets a string field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_string(const std::string& path, std::string& value) const;
+    /// \brief Gets a time field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_time(const std::string& path, ros::Time& value) const;
+    /// \brief Gets a duration field from the message.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    bool get_duration(const std::string& path, ros::Duration& value) const;
 
     // PRINTING
     /// \brief Prints the message's component definitions to a string.
@@ -77,12 +150,6 @@ private:
     /// \brief Stores the serialized bytes of the most recent message instance.
     uint8_t* m_bytes;
 
-    // PATH
-    std::string clean_path(const std::string& path) const;
-
-    // GET
-    bool get_field(uint32_t& position, const std::string& path, definition_t::primitive_type_t desired_type) const;
-
     // COMPONENTS
     /// \brief A map of component message definitions (top level only)
     std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
@@ -93,10 +160,7 @@ private:
 
     // DEFINITION
     /// \brief The message's calculated definition tree.
-    definition_tree_t m_definition_tree;
-    
-    std::unordered_map<std::string, const definition_t*> m_definition_map;
-    
+    definition_tree_t m_definition_tree;    
     /// \brief A recursive method for adding new definitions to the definition tree.
     /// \param parent_path The parent path of the definition tree being added.
     /// \param definition_tree A reference to the definition tree to add to.
@@ -115,8 +179,23 @@ private:
     /// \returns If the path exists, a pointer to the definition tree, otherwise nullptr.
     const definition_tree_t* get_definition_tree(const std::string& path) const;
 
-    std::unordered_map<std::string, uint32_t> m_position_map;
-    void update_positions(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position);
+    // FIELD MAPPING
+    /// \brief Store the position and type of a read field.
+    struct field_t
+    {
+        /// \brief Stores the position of the field in the message's serialized byte array.
+        uint32_t position;
+        /// \brief Stores the primitive type of the field.
+        definition_t::primitive_type_t primitive_type;
+    };
+    /// \brief Stores a map of fields in a parsed serialized message.
+    /// \details Field details are mapped to their fully qualified path string.
+    std::unordered_map<std::string, field_t> m_field_map;
+    /// \brief Updates the field map by recursively parsing a message's serialized bytes.
+    /// \param definition_tree The definition tree to recurse on.
+    /// \param current_path The current fully qualified path of recursion.
+    /// \param current_position The current position in the message's serialized bytes.
+    void update_field_map(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position);
 };
 
 }

@@ -38,11 +38,11 @@ void introspector::new_message(const topic_tools::ShapeShifter& message)
     ros::serialization::OStream stream(introspector::m_bytes, message_length);
     ros::serialization::serialize(stream, message);
 
-    // Update position map.
-    introspector::m_position_map.clear();
+    // Update field map.
+    introspector::m_field_map.clear();
     std::string current_path = "";
     uint32_t current_position = 0;
-    introspector::update_positions(introspector::m_definition_tree, current_path, current_position);
+    introspector::update_field_map(introspector::m_definition_tree, current_path, current_position);
 }
 void introspector::register_message(const std::string& md5, const std::string& type, const std::string& definition)
 {
@@ -51,7 +51,6 @@ void introspector::register_message(const std::string& md5, const std::string& t
 
     // Add top level message to the definition, and let recursion handle the rest.
     introspector::m_definition_tree = definition_tree();
-    introspector::m_definition_map.clear();
     introspector::add_definition("", introspector::m_definition_tree, definition_t(type, "", ""));
 
     // Store MD5.
@@ -62,156 +61,336 @@ bool introspector::is_registered(const std::string& md5)
     return (introspector::m_md5.compare(md5) == 0);
 }
 
-// LISTING
-const definition_tree_t* introspector::get_definition_tree(const std::string& path) const
-{
-    // Split up the path into its component pieces.
-    boost::char_separator<char> delimiter(".");
-    boost::tokenizer<boost::char_separator<char>> tokenizer(path, delimiter);
-    std::vector<std::string> path_parts(tokenizer.begin(), tokenizer.end());
-
-    // Iterate over path parts to traverse the tree.
-    auto parent_definition = &(introspector::m_definition_tree);
-    for(auto path_part = path_parts.cbegin(); path_part != path_parts.cend(); ++path_part)
-    {
-        bool path_part_found = false;
-        // Iterate through current parent definition to find the path part as a field name.
-        for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
-        {
-            // Check if field name matches path name.
-            if(field->definition.name().compare(*path_part) == 0)
-            {
-                // Path matches. Update parent_definition to this field and stop search.
-                parent_definition = &(*field);
-                path_part_found = true;
-                break;
-            }
-        }
-
-        // Quit if the path part was not found.
-        if(!path_part_found)
-        {
-            return nullptr;
-        }
-    }
-
-    return parent_definition;
-}
-definition_tree_t introspector::definition_tree() const
-{
-    return introspector::m_definition_tree;
-}
-bool introspector::list_fields(std::vector<definition_t>&  fields, std::string parent_path) const
-{
-    // Remove array indicators from the path.
-    std::string clean_path = introspector::clean_path(parent_path);
-    
-    // Get the definition tree for the parent path.
-    auto parent_definition = introspector::get_definition_tree(clean_path);
-
-    // If the parent path couldn't be found, quit.
-    if(!parent_definition)
-    {
-        return false;
-    }
-
-    // Clear the output vector.
-    fields.clear();
-
-    // Populate the fields output from the parent definition.
-    for(auto field = parent_definition->fields.begin(); field != parent_definition->fields.end(); ++field)
-    {
-        // Add field to output.
-        fields.push_back(field->definition);
-    }
-
-    return true;
-}
-bool introspector::field_info(definition_t& field_info, const std::string& path) const
-{
-    // Clean any array indicators out of the path.
-    std::string clean_path = introspector::clean_path(path);
-
-    // Try to grab the definition.
-    try
-    {
-        field_info = *introspector::m_definition_map.at(clean_path);
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-// PATH
-std::string introspector::clean_path(const std::string& path) const
-{
-    // Clean array indicators out of path.
-    std::string clean_path;
-
-    // Split up the path into its component pieces.
-    boost::char_separator<char> delimiter(".");
-    boost::tokenizer<boost::char_separator<char>> tokenizer(path, delimiter);
-
-    // Iterate over pieces to build cleaned output.
-    for(auto part = tokenizer.begin(); part != tokenizer.end(); ++part)
-    {
-        if(!clean_path.empty())
-        {
-            clean_path += ".";
-        }
-        clean_path += part->substr(0, part->find_first_of('['));
-    }
-
-    return clean_path;
-}
-
 // GET
-bool introspector::get_field(uint32_t& position, const std::string& path, definition_t::primitive_type_t desired_type) const
+bool introspector::path_exists(const std::string& path) const
 {
-    // Try to get the position of the field.
-    try
-    {
-        position = introspector::m_position_map.at(path);
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    // Get the field's actual definition.
-    std::string clean_path = introspector::clean_path(path);
-    const definition_t* definition;
-    try
-    {
-        definition = introspector::m_definition_map.at(clean_path);
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    // Check if the desired type matches the actual type.
-    if(desired_type != definition->primitive_type())
-    {
-        return false;
-    }
-
-    return true;    
+    return introspector::m_field_map.count(path);
 }
-bool introspector::get_field(double& value, const std::string& path) const
+
+bool introspector::get_bool(const std::string& path, bool& value) const
 {
-    // Get the position and check the desired value.
-    uint32_t position;
-    if(!introspector::get_field(position, path, definition_t::primitive_type_t::FLOAT64))
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::BOOL)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = *reinterpret_cast<bool*>(&(introspector::m_bytes[field_info.position]));
+    }
+    catch(...)
     {
         return false;
     }
 
-    // Extract value.
-    value = *reinterpret_cast<double*>(&(introspector::m_bytes[position]));
+    return true;
+}
+bool introspector::get_int8(const std::string& path, int8_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::INT8)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = *reinterpret_cast<int8_t*>(&(introspector::m_bytes[field_info.position]));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_int16(const std::string& path, int16_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::INT16)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le16toh(*reinterpret_cast<int16_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_int32(const std::string& path, int32_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::INT32)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le32toh(*reinterpret_cast<int32_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_int64(const std::string& path, int64_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::INT64)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le64toh(*reinterpret_cast<int64_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_uint8(const std::string& path, uint8_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::UINT8)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = *reinterpret_cast<uint8_t*>(&(introspector::m_bytes[field_info.position]));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_uint16(const std::string& path, uint16_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::UINT16)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le16toh(*reinterpret_cast<uint16_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_uint32(const std::string& path, uint32_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::UINT32)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_uint64(const std::string& path, uint64_t& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::UINT64)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le64toh(*reinterpret_cast<uint64_t*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_float32(const std::string& path, float& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::FLOAT32)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le32toh(*reinterpret_cast<float*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_float64(const std::string& path, double& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::FLOAT64)
+        {
+            return false;
+        }
+
+        // Extract value.
+        value = le64toh(*reinterpret_cast<double*>(&(introspector::m_bytes[field_info.position])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_string(const std::string& path, std::string& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::STRING)
+        {
+            return false;
+        }
+
+        // Read the strings length.
+        uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[field_info.position]));
+
+        // Read the string.
+        value = std::string(reinterpret_cast<char*>(&(introspector::m_bytes[field_info.position + 4])), string_length);
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_time(const std::string& path, ros::Time& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::TIME)
+        {
+            return false;
+        }
+
+        // Extract secs and nsecs.
+        value.sec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
+        value.nsec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position + 4])));
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+bool introspector::get_duration(const std::string& path, ros::Duration& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Check field type.
+        if(field_info.primitive_type != definition_t::primitive_type_t::TIME)
+        {
+            return false;
+        }
+
+        // Extract secs and nsecs.
+        value.sec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
+        value.nsec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position + 4])));
+    }
+    catch(...)
+    {
+        return false;
+    }
 
     return true;
 }
@@ -351,9 +530,6 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
     definition_tree.definition = component_definition;
     definition_tree.definition.update_parent_path(parent_path);
 
-    // Add the definition to the definition map.
-    introspector::m_definition_map[definition_tree.definition.path()] =  &(definition_tree.definition);
-
     // Find the definition's type.
     if(!component_definition.is_primitive())
     {
@@ -380,7 +556,10 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
         definition_tree.definition.update_size(total_size);
     }
 }
-
+definition_tree_t introspector::definition_tree() const
+{
+    return introspector::m_definition_tree;
+}
 void introspector::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const
 {
     // Print definition's info in one line.
@@ -398,7 +577,7 @@ void introspector::print_definition_tree(std::stringstream& stream, const defini
 }
 
 // POSITIONING
-void introspector::update_positions(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position)
+void introspector::update_field_map(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position)
 {
     // Build the path to this tree.
     std::string path = current_path;
@@ -446,8 +625,8 @@ void introspector::update_positions(const definition_tree_t& definition_tree, co
                 instance_path += "[" + std::to_string(i) + "]";
             }
 
-            // Add instance's position to the position map.
-            introspector::m_position_map[instance_path] = current_position;
+            // Add instance to field map.
+            introspector::m_field_map[instance_path] = {current_position, definition_tree.definition.primitive_type()};
 
             // Check if string.
             if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
@@ -482,7 +661,7 @@ void introspector::update_positions(const definition_tree_t& definition_tree, co
             {
                 // Recurse into field.
                 // Use a reset current position as they are all relative to their parent.
-                introspector::update_positions(*field, instance_path, current_position);
+                introspector::update_field_map(*field, instance_path, current_position);
             }
         }
     }
