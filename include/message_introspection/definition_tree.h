@@ -1,3 +1,5 @@
+/// \file message_introspection/definition_tree.h
+/// \brief Defines the message_introspection::definition_tree_t class.
 #ifndef MESSAGE_INTROSPECTION___DEFINITION_TREE_H
 #define MESSAGE_INTROSPECTION___DEFINITION_TREE_H
 

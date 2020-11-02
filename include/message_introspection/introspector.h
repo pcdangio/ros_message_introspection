@@ -173,7 +173,7 @@ private:
 
     /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
-    /// \param definition The definition tree to print.
+    /// \param definition_tree The definition tree to print.
     /// \param level The current depth of the tree.
     void print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const;
 
