@@ -96,7 +96,7 @@ private:
     /// \brief Recursively updates the serialized byte positions of fields in the definition tree using the current message instance.
     /// \param definition_tree The definition tree to calculate positions for.
     /// \param current_position The current reading position in the message instance's serialized bytes.
-    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position);
+    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position, bool update_relative_position = true);
     /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
     /// \param definition The definition tree to print.

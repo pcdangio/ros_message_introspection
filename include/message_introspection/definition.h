@@ -4,6 +4,7 @@
 #define MESSAGE_INTROSPECTION___DEFINITION_H
 
 #include <string>
+#include <vector>
 
 namespace message_introspection {
 
@@ -87,9 +88,9 @@ public:
     std::string path() const;
 
     // POSITION
-    /// \brief Gets the definition's serialized byte position in the message.
-    /// \returns The serialized byte position.
-    uint32_t serialized_position() const;
+
+    uint32_t relative_position() const;
+    uint32_t instance_position(uint32_t index) const;
 
     // UPDATE
     /// \brief Updates the definition's type.
@@ -104,9 +105,9 @@ public:
     /// \brief Updates the definition's parent path.
     /// \returns The definition's parent path.
     void update_parent_path(const std::string& parent_path);
-    /// \brief Updates the definition's serialized byte position.
-    /// \param position The new position.
-    void update_serialized_position(uint32_t position);
+
+    void update_relative_position(uint32_t position);
+    void add_instance_position(uint32_t position);
 
 private:
     // TYPE
@@ -134,8 +135,8 @@ private:
     std::string m_path;
 
     // POSITION
-    /// \brief The position of this definition in the serialized byte array.
-    uint32_t m_serialized_position;
+    uint32_t m_relative_position;
+    std::vector<uint32_t> m_instance_positions;
 };
 
 }

@@ -18,7 +18,6 @@ introspector::~introspector()
 }
 
 // MESSAGE
-#include <iostream>
 void introspector::new_message(const topic_tools::ShapeShifter& message)
 {
     // First register the message if it hasn't been registered already.
@@ -305,48 +304,51 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
         definition_tree.definition.update_size(total_size);
     }
 }
-void introspector::update_positions(definition_tree_t& definition_tree, uint32_t& current_position)
+#include <iostream>
+void introspector::update_positions(definition_tree_t& definition_tree, uint32_t& current_position, bool update_relative_position)
 {
-    // If this is a primitive type, update it's serialized position.
-    if(definition_tree.definition.is_primitive())
+    // Set this tree's relative position.
+    if(update_relative_position)
     {
-        definition_tree.definition.update_serialized_position(current_position);
+        definition_tree.definition.update_relative_position(current_position);
+        std::cout << current_position << "\t" << definition_tree.definition.path() << std::endl;
     }
 
-    // Check if this field is an array or repeated field, and get it's length.
-    uint32_t array_length;
+    // This tree may or may not be an array.
+    // Use array information to determine number of instances.
+    uint32_t instances;
     switch(definition_tree.definition.array_type())
     {
         case definition_t::array_type_t::NONE:
         {
-            array_length = 1;
+            instances = 1;
             break;
         }
         case definition_t::array_type_t::FIXED_LENGTH:
         {
-            array_length = definition_tree.definition.array_length();
+            instances = definition_tree.definition.array_length();
             break;
         }
         case definition_t::array_type_t::VARIABLE_LENGTH:
         {
             // Read the length, converting from little endian.
-            array_length = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[current_position]));
+            instances = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[current_position]));
             // Update current position to account for the length bytes;
             current_position += 4;
             // Update the definition's array length.
-            definition_tree.definition.update_array_length(array_length);
+            definition_tree.definition.update_array_length(instances);
             break;
         }
     }
 
-    // Update the current position.
+    // If this tree is primitive, update current position for the next sibling.
     if(definition_tree.definition.is_primitive())
     {
         // Check if string.
         if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
         {
-            // Read possibly repeated string.
-            for(uint32_t a = 0; a < array_length; ++a)
+            // Read variable length string instances
+            for(uint32_t i = 0; i < instances; ++i)
             {
                 // Read string length, converting from little endian.
                 uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[current_position]));
@@ -356,24 +358,42 @@ void introspector::update_positions(definition_tree_t& definition_tree, uint32_t
         }
         else
         {
-            // Update current position with possibly repeated type.
-            current_position += array_length * definition_tree.definition.size();
+            // Update current position with instances of this primitive type's size
+            current_position += instances * definition_tree.definition.size();
         }
     }
     else
     {
-        // Definition tree is not a primitive type, and thus has fields.
+        // Tree is not a primitive type, and thus has children.
 
-        // Update current position over this possibly repeated field.
-        for(uint32_t a = 0; a < array_length; ++a)
+        // For each instance, recurse into that instance's children.
+        uint32_t instance_position = 0;
+        for(uint32_t i = 0; i < instances; ++i)
         {
+            // Store instance positions if there is more than one instance.
+            if(definition_tree.definition.is_array())
+            {
+                definition_tree.definition.add_instance_position(instance_position);
+                std::cout << "instance position " << instance_position << std::endl;
+            }
+
+            // Child positions are all relative to their parent instance.
+            uint32_t child_position = 0;
+
             // Iterate through fields.
             for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
             {
                 // Recurse into field.
-                introspector::update_positions(*field, current_position);
+                // Use a reset current position as they are all relative to their parent.
+                introspector::update_positions(*field, child_position);
             }
+
+            // Add childrens' size to instance position.
+            instance_position += child_position;
         }
+
+        // Add size of all instances to current position.
+        current_position += instance_position;
     }
 }
 void introspector::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const

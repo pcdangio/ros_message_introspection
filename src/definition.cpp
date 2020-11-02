@@ -13,6 +13,7 @@ definition_t::definition_t()
     definition_t::m_array_length = 0;
     definition_t::m_name = "";
     definition_t::m_path = "";
+    definition_t::m_relative_position = 0;
 }
 definition_t::definition_t(const std::string& type, const std::string& array, const std::string& name)
 {
@@ -95,6 +96,16 @@ std::string definition_t::name() const
 std::string definition_t::path() const
 {
     return definition_t::m_path;
+}
+
+// POSITION
+uint32_t definition_t::relative_position() const
+{
+    return definition_t::m_relative_position;
+}
+uint32_t definition_t::instance_position(uint32_t index) const
+{
+    return definition_t::m_instance_positions[index];
 }
 
 // UPDATE
@@ -199,7 +210,11 @@ void definition_t::update_parent_path(const std::string& parent_path)
         definition_t::m_path = definition_t::m_name;
     }
 }
-void definition_t::update_serialized_position(uint32_t position)
+void definition_t::update_relative_position(uint32_t position)
 {
-    definition_t::m_serialized_position = position;
+    definition_t::m_relative_position = position;
+}
+void definition_t::add_instance_position(uint32_t position)
+{
+    definition_t::m_instance_positions.push_back(position);
 }
