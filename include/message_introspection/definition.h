@@ -87,11 +87,6 @@ public:
     /// \returns The full path of the definition.
     std::string path() const;
 
-    // POSITION
-
-    uint32_t relative_position() const;
-    uint32_t instance_position(uint32_t index) const;
-
     // UPDATE
     /// \brief Updates the definition's type.
     /// \param type The new type string to assign.
@@ -105,9 +100,6 @@ public:
     /// \brief Updates the definition's parent path.
     /// \returns The definition's parent path.
     void update_parent_path(const std::string& parent_path);
-
-    void update_relative_position(uint32_t position);
-    void add_instance_position(uint32_t position);
 
 private:
     // TYPE
@@ -133,10 +125,6 @@ private:
     // PATH
     /// \brief The definition's full path.
     std::string m_path;
-
-    // POSITION
-    uint32_t m_relative_position;
-    std::vector<uint32_t> m_instance_positions;
 };
 
 }

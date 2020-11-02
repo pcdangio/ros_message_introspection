@@ -77,6 +77,12 @@ private:
     /// \brief Stores the serialized bytes of the most recent message instance.
     uint8_t* m_bytes;
 
+    // PATH
+    std::string clean_path(const std::string& path) const;
+
+    // GET
+    bool get_field(uint32_t& position, const std::string& path, definition_t::primitive_type_t desired_type) const;
+
     // COMPONENTS
     /// \brief A map of component message definitions (top level only)
     std::unordered_map<std::string, std::vector<definition_t>> m_component_definitions;
@@ -88,15 +94,15 @@ private:
     // DEFINITION
     /// \brief The message's calculated definition tree.
     definition_tree_t m_definition_tree;
+    
+    std::unordered_map<std::string, const definition_t*> m_definition_map;
+    
     /// \brief A recursive method for adding new definitions to the definition tree.
     /// \param parent_path The parent path of the definition tree being added.
     /// \param definition_tree A reference to the definition tree to add to.
     /// \param component_definition The component information to add to the definition's sub tree.
     void add_definition(const std::string& parent_path, definition_tree_t& definition_tree, const definition_t& component_definition);
-    /// \brief Recursively updates the serialized byte positions of fields in the definition tree using the current message instance.
-    /// \param definition_tree The definition tree to calculate positions for.
-    /// \param current_position The current reading position in the message instance's serialized bytes.
-    void update_positions(definition_tree_t& definition_tree, uint32_t& current_position, bool update_relative_position = true);
+
     /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
     /// \param definition The definition tree to print.
@@ -108,6 +114,9 @@ private:
     /// \param path The path to get the definition tree of.
     /// \returns If the path exists, a pointer to the definition tree, otherwise nullptr.
     const definition_tree_t* get_definition_tree(const std::string& path) const;
+
+    std::unordered_map<std::string, uint32_t> m_position_map;
+    void update_positions(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position);
 };
 
 }

@@ -38,9 +38,11 @@ void introspector::new_message(const topic_tools::ShapeShifter& message)
     ros::serialization::OStream stream(introspector::m_bytes, message_length);
     ros::serialization::serialize(stream, message);
 
-    // Update serialized positions of definition tree.
+    // Update position map.
+    introspector::m_position_map.clear();
+    std::string current_path = "";
     uint32_t current_position = 0;
-    introspector::update_positions(introspector::m_definition_tree, current_position);
+    introspector::update_positions(introspector::m_definition_tree, current_path, current_position);
 }
 void introspector::register_message(const std::string& md5, const std::string& type, const std::string& definition)
 {
@@ -48,6 +50,8 @@ void introspector::register_message(const std::string& md5, const std::string& t
     introspector::parse_components(type, definition);
 
     // Add top level message to the definition, and let recursion handle the rest.
+    introspector::m_definition_tree = definition_tree();
+    introspector::m_definition_map.clear();
     introspector::add_definition("", introspector::m_definition_tree, definition_t(type, "", ""));
 
     // Store MD5.
@@ -99,8 +103,11 @@ definition_tree_t introspector::definition_tree() const
 }
 bool introspector::list_fields(std::vector<definition_t>&  fields, std::string parent_path) const
 {
+    // Remove array indicators from the path.
+    std::string clean_path = introspector::clean_path(parent_path);
+    
     // Get the definition tree for the parent path.
-    auto parent_definition = introspector::get_definition_tree(parent_path);
+    auto parent_definition = introspector::get_definition_tree(clean_path);
 
     // If the parent path couldn't be found, quit.
     if(!parent_definition)
@@ -122,25 +129,91 @@ bool introspector::list_fields(std::vector<definition_t>&  fields, std::string p
 }
 bool introspector::field_info(definition_t& field_info, const std::string& path) const
 {
-    // Get definition for path.
-    auto definition_tree = introspector::get_definition_tree(path);
+    // Clean any array indicators out of the path.
+    std::string clean_path = introspector::clean_path(path);
 
-    // Quit if path wasn't found.
-    if(!definition_tree)
+    // Try to grab the definition.
+    try
+    {
+        field_info = *introspector::m_definition_map.at(clean_path);
+    }
+    catch(...)
     {
         return false;
     }
 
-    // Output the definition.
-    field_info = definition_tree->definition;
-
     return true;
 }
 
+// PATH
+std::string introspector::clean_path(const std::string& path) const
+{
+    // Clean array indicators out of path.
+    std::string clean_path;
+
+    // Split up the path into its component pieces.
+    boost::char_separator<char> delimiter(".");
+    boost::tokenizer<boost::char_separator<char>> tokenizer(path, delimiter);
+
+    // Iterate over pieces to build cleaned output.
+    for(auto part = tokenizer.begin(); part != tokenizer.end(); ++part)
+    {
+        if(!clean_path.empty())
+        {
+            clean_path += ".";
+        }
+        clean_path += part->substr(0, part->find_first_of('['));
+    }
+
+    return clean_path;
+}
+
 // GET
+bool introspector::get_field(uint32_t& position, const std::string& path, definition_t::primitive_type_t desired_type) const
+{
+    // Try to get the position of the field.
+    try
+    {
+        position = introspector::m_position_map.at(path);
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    // Get the field's actual definition.
+    std::string clean_path = introspector::clean_path(path);
+    const definition_t* definition;
+    try
+    {
+        definition = introspector::m_definition_map.at(clean_path);
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    // Check if the desired type matches the actual type.
+    if(desired_type != definition->primitive_type())
+    {
+        return false;
+    }
+
+    return true;    
+}
 bool introspector::get_field(double& value, const std::string& path) const
 {
+    // Get the position and check the desired value.
+    uint32_t position;
+    if(!introspector::get_field(position, path, definition_t::primitive_type_t::FLOAT64))
+    {
+        return false;
+    }
 
+    // Extract value.
+    value = *reinterpret_cast<double*>(&(introspector::m_bytes[position]));
+
+    return true;
 }
 
 // PRINTING
@@ -176,7 +249,7 @@ std::string introspector::print_definition_tree() const
     return output.str();
 }
 
-// COMPONENT PARSING
+// COMPONENTS
 void introspector::parse_components(std::string message_type, std::string introspector)
 {
     // Clear current component definitions.
@@ -278,6 +351,9 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
     definition_tree.definition = component_definition;
     definition_tree.definition.update_parent_path(parent_path);
 
+    // Add the definition to the definition map.
+    introspector::m_definition_map[definition_tree.definition.path()] =  &(definition_tree.definition);
+
     // Find the definition's type.
     if(!component_definition.is_primitive())
     {
@@ -304,15 +380,33 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
         definition_tree.definition.update_size(total_size);
     }
 }
-#include <iostream>
-void introspector::update_positions(definition_tree_t& definition_tree, uint32_t& current_position, bool update_relative_position)
+
+void introspector::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const
 {
-    // Set this tree's relative position.
-    if(update_relative_position)
+    // Print definition's info in one line.
+    stream << "name = " << definition_tree.definition.name() << " type = " << definition_tree.definition.type() << " size = " << definition_tree.definition.size() << " array = " << definition_tree.definition.array() << std::endl;
+
+    // Print sub definitions indented.
+    for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
     {
-        definition_tree.definition.update_relative_position(current_position);
-        std::cout << current_position << "\t" << definition_tree.definition.path() << std::endl;
+        for(uint32_t i = 0; i <= level; ++i)
+        {
+            stream << "\t";
+        }
+        introspector::print_definition_tree(stream, *field, level+1);
     }
+}
+
+// POSITIONING
+void introspector::update_positions(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position)
+{
+    // Build the path to this tree.
+    std::string path = current_path;
+    if(!path.empty())
+    {
+        path += ".";
+    }
+    path += definition_tree.definition.name();
 
     // This tree may or may not be an array.
     // Use array information to determine number of instances.
@@ -335,79 +429,61 @@ void introspector::update_positions(definition_tree_t& definition_tree, uint32_t
             instances = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[current_position]));
             // Update current position to account for the length bytes;
             current_position += 4;
-            // Update the definition's array length.
-            definition_tree.definition.update_array_length(instances);
             break;
         }
     }
 
-    // If this tree is primitive, update current position for the next sibling.
+    // Check if this tree is primitive or not.
     if(definition_tree.definition.is_primitive())
     {
-        // Check if string.
-        if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
+        // Iterate over instances.
+        for(uint32_t i = 0; i < instances; ++i)
         {
-            // Read variable length string instances
-            for(uint32_t i = 0; i < instances; ++i)
+            // Build path for this instance.
+            std::string instance_path = path;
+            if(definition_tree.definition.is_array())
+            {
+                instance_path += "[" + std::to_string(i) + "]";
+            }
+
+            // Add instance's position to the position map.
+            introspector::m_position_map[instance_path] = current_position;
+
+            // Check if string.
+            if(definition_tree.definition.primitive_type() == definition_t::primitive_type_t::STRING)
             {
                 // Read string length, converting from little endian.
                 uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[current_position]));
                 // Update current position.
                 current_position += 4 + string_length;
             }
-        }
-        else
-        {
-            // Update current position with instances of this primitive type's size
-            current_position += instances * definition_tree.definition.size();
+            else
+            {
+                // Update current position with this primitive type's size.
+                current_position += definition_tree.definition.size();
+            }
         }
     }
     else
     {
         // Tree is not a primitive type, and thus has children.
-
         // For each instance, recurse into that instance's children.
-        uint32_t instance_position = 0;
         for(uint32_t i = 0; i < instances; ++i)
         {
-            // Store instance positions if there is more than one instance.
+            // Build path for this instance.
+            std::string instance_path = path;
             if(definition_tree.definition.is_array())
             {
-                definition_tree.definition.add_instance_position(instance_position);
-                std::cout << "instance position " << instance_position << std::endl;
+                instance_path += "[" + std::to_string(i) + "]";
             }
-
-            // Child positions are all relative to their parent instance.
-            uint32_t child_position = 0;
 
             // Iterate through fields.
             for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
             {
                 // Recurse into field.
                 // Use a reset current position as they are all relative to their parent.
-                introspector::update_positions(*field, child_position);
+                introspector::update_positions(*field, instance_path, current_position);
             }
-
-            // Add childrens' size to instance position.
-            instance_position += child_position;
         }
-
-        // Add size of all instances to current position.
-        current_position += instance_position;
-    }
-}
-void introspector::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const
-{
-    // Print definition's info in one line.
-    stream << "name = " << definition_tree.definition.name() << " type = " << definition_tree.definition.type() << " size = " << definition_tree.definition.size() << " array = " << definition_tree.definition.array() << std::endl;
-
-    // Print sub definitions indented.
-    for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
-    {
-        for(uint32_t i = 0; i <= level; ++i)
-        {
-            stream << "\t";
-        }
-        introspector::print_definition_tree(stream, *field, level+1);
     }
 }
