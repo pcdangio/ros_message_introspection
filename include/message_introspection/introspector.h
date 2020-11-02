@@ -7,6 +7,7 @@
 #include "message_introspection/definition_tree.h"
 
 #include <topic_tools/shape_shifter.h>
+#include <rosbag/message_instance.h>
 
 #include <string>
 #include <vector>
@@ -26,9 +27,12 @@ public:
     ~introspector();
 
     // NEW MESSAGE
-    /// \brief Sets a new message instance to read from.
+    /// \brief Sets a new topic message instance to read from.
     /// \param message The new message instance.
     void new_message(const topic_tools::ShapeShifter& message);
+    /// \brief Sets a new rosbag message instance to read from.
+    /// \param message The new message instance.
+    void new_message(const rosbag::MessageInstance& message);
 
     // DEFINITION
     /// \brief Gets a copy of the message's definition tree.

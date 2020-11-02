@@ -10,6 +10,7 @@ project(message_introspection)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   topic_tools
+  rosbag
 )
 
 ## System dependencies are found with CMake's conventions
@@ -104,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES message_introspection
-  CATKIN_DEPENDS roscpp topic_tools
+  CATKIN_DEPENDS roscpp topic_tools rosbag
 #  DEPENDS system_lib
 )
 

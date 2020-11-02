@@ -44,6 +44,29 @@ void introspector::new_message(const topic_tools::ShapeShifter& message)
     uint32_t current_position = 0;
     introspector::update_field_map(introspector::m_definition_tree, current_path, current_position);
 }
+void introspector::new_message(const rosbag::MessageInstance& message)
+{
+    // First register the message if it hasn't been registered already.
+    if(!introspector::is_registered(message.getMD5Sum()))
+    {
+        // Register message.
+        introspector::register_message(message.getMD5Sum(), message.getDataType(), message.getMessageDefinition());
+    }
+
+    // Clear old data.
+    delete [] introspector::m_bytes;
+
+    // Copy serialized bytes to this instance.
+    introspector::m_bytes = new uint8_t[message.size()];
+    ros::serialization::OStream stream(introspector::m_bytes, message.size());
+    message.write(stream);
+
+    // Update field map.
+    introspector::m_field_map.clear();
+    std::string current_path = "";
+    uint32_t current_position = 0;
+    introspector::update_field_map(introspector::m_definition_tree, current_path, current_position);
+}
 void introspector::register_message(const std::string& md5, const std::string& type, const std::string& definition)
 {
     // Extract message component types.
