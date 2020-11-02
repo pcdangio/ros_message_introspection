@@ -66,7 +66,6 @@ bool introspector::path_exists(const std::string& path) const
 {
     return introspector::m_field_map.count(path);
 }
-
 bool introspector::get_bool(const std::string& path, bool& value) const
 {
     try
