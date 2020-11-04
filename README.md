@@ -199,6 +199,15 @@ introspector.new_message(message);
 //   - The full path string of the field.
 // All of this information can be programmatically accessed to find details about the message's structure and it's fields.
 message_introspection::definition_tree_t definition_tree = introspector.definition_tree();
+// To read the definition tree, iterate through it.
+// This example reads the top-level fields of the message (but not their subfields).
+std::vector<std::string> field_paths;
+for(auto field = definition_tree.fields().begin(); field != definition_tree.fields().end(); ++field)
+{
+    field_paths.push_back(field->path());
+    std::cout << "type: " << field->type() << "\tpath: " << field->path() << std::endl;
+}
+// Note that the definition tree is recursive, so you need a recursive function to fully traverse the tree.
 
 
 
