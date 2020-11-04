@@ -230,6 +230,7 @@ bool path_exists = introspector.path_exists("linear_acceleration.x");
 
 
 // You can use get_*() methods to read data from the message itself.
+// NOTE: See get_number() example later on for generic field reading.
 // A get_*() method is provided for each ROS primitive type. Only primitive type fields (e.g. int32, string, time, etc) can be read.
 // You must use the correct get_*() method that matches the type of the field you are trying to read.
 // Use the definition_tree to determine what the field's path and type is.
@@ -237,6 +238,22 @@ bool path_exists = introspector.path_exists("linear_acceleration.x");
 double linear_acceleration_x;
 bool success = introspector.get_float64("linear_acceleration.x", linear_acceleration_x);
 // This method will return FALSE if the path does not exist, or if the requested field type does not match.
+
+
+
+// You can use the get_number() method to read any primitive type field as a double.
+// This is convenient because you don't have to use specific get methods like get_int16 or get_uint64 to read the data.
+// Here, header.seq is actually a UINT32 type, but can be read as a double without caring about it's type.
+double header_sequence;
+bool success = introspector.get_number("header.seq", header_sequence);
+// You can also read TIME or DURATION types as a double, represented in seconds.
+double header_timestamp;
+bool success = introspector.get_number("header.stamp", header_timestamp);
+// You can even try to parse STRING types as a double. If the string itself does not represent a number, NaN is returned.
+double string_number;
+bool success = introspector.get_number("some.path.to.string_number", string_number);
+// If the path.to.string_number field was "1.234", string_number now contains 1.234.
+// If the field instead contained "abcd", string_number now contains NaN.
 ```
 
 # Important Considerations
