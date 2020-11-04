@@ -222,6 +222,37 @@ private:
         // Using endian.h automatically assumes host is little endian. No need for conversion.
         return *reinterpret_cast<T*>(&(introspector::m_bytes[position]));
     }
+    /// \brief Reads a field from the message.
+    /// \tparam T The data type of the field to read.
+    /// \param path The path to read the field from.
+    /// \param type The field's primitive type.
+    /// \param value The value to store the field data in.
+    /// \returns TRUE if the path exists and the field was successfully read, otherwise FALSE.
+    /// \note This can only be used on numeric primitive types, and the value type must match the primitive type.
+    template<typename T>
+    bool get_field(const std::string& path, definition_t::primitive_type_t type, T& value) const
+    {
+        try
+        {
+            // Get field info from map.
+            auto field_info = introspector::m_field_map.at(path);
+
+            // Check field type.
+            if(field_info.primitive_type != type)
+            {
+                return false;
+            }
+
+            // Extract value.
+            value = introspector::read_value<T>(field_info.position);
+        }
+        catch(...)
+        {
+            return false;
+        }
+
+        return true;
+    }
 };
 
 }

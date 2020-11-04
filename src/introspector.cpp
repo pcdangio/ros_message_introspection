@@ -1,7 +1,6 @@
 #include "message_introspection/introspector.h"
 
 #include <boost/tokenizer.hpp>
-#include <endian.h>
 
 using namespace message_introspection;
 
@@ -91,256 +90,47 @@ bool introspector::path_exists(const std::string& path) const
 }
 bool introspector::get_bool(const std::string& path, bool& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::BOOL)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = *reinterpret_cast<bool*>(&(introspector::m_bytes[field_info.position]));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<bool>(path, definition_t::primitive_type_t::BOOL, value);
 }
 bool introspector::get_int8(const std::string& path, int8_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::INT8)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = *reinterpret_cast<int8_t*>(&(introspector::m_bytes[field_info.position]));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<int8_t>(path, definition_t::primitive_type_t::INT8, value);
 }
 bool introspector::get_int16(const std::string& path, int16_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::INT16)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le16toh(*reinterpret_cast<int16_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<int16_t>(path, definition_t::primitive_type_t::INT16, value);
 }
 bool introspector::get_int32(const std::string& path, int32_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::INT32)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le32toh(*reinterpret_cast<int32_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<int32_t>(path, definition_t::primitive_type_t::INT32, value);
 }
 bool introspector::get_int64(const std::string& path, int64_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::INT64)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le64toh(*reinterpret_cast<int64_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<int64_t>(path, definition_t::primitive_type_t::INT64, value);
 }
 bool introspector::get_uint8(const std::string& path, uint8_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::UINT8)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = *reinterpret_cast<uint8_t*>(&(introspector::m_bytes[field_info.position]));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<uint8_t>(path, definition_t::primitive_type_t::UINT8, value);
 }
 bool introspector::get_uint16(const std::string& path, uint16_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::UINT16)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le16toh(*reinterpret_cast<uint16_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<uint16_t>(path, definition_t::primitive_type_t::UINT16, value);
 }
 bool introspector::get_uint32(const std::string& path, uint32_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::UINT32)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<uint32_t>(path, definition_t::primitive_type_t::UINT32, value);
 }
 bool introspector::get_uint64(const std::string& path, uint64_t& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::UINT64)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le64toh(*reinterpret_cast<uint64_t*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<uint64_t>(path, definition_t::primitive_type_t::UINT64, value);
 }
 bool introspector::get_float32(const std::string& path, float& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::FLOAT32)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le32toh(*reinterpret_cast<float*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<float_t>(path, definition_t::primitive_type_t::FLOAT32, value);
 }
 bool introspector::get_float64(const std::string& path, double& value) const
 {
-    try
-    {
-        // Get field info from map.
-        auto field_info = introspector::m_field_map.at(path);
-
-        // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::FLOAT64)
-        {
-            return false;
-        }
-
-        // Extract value.
-        value = le64toh(*reinterpret_cast<double*>(&(introspector::m_bytes[field_info.position])));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
+    return introspector::get_field<double_t>(path, definition_t::primitive_type_t::FLOAT64, value);
 }
 bool introspector::get_string(const std::string& path, std::string& value) const
 {
@@ -356,7 +146,7 @@ bool introspector::get_string(const std::string& path, std::string& value) const
         }
 
         // Read the strings length.
-        uint32_t string_length = le32toh(*reinterpret_cast<uint32_t*>(&introspector::m_bytes[field_info.position]));
+        uint32_t string_length = introspector::read_value<uint32_t>(field_info.position);
 
         // Read the string.
         value = std::string(reinterpret_cast<char*>(&(introspector::m_bytes[field_info.position + 4])), string_length);
@@ -382,8 +172,8 @@ bool introspector::get_time(const std::string& path, ros::Time& value) const
         }
 
         // Extract secs and nsecs.
-        value.sec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
-        value.nsec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position + 4])));
+        value.sec = introspector::read_value<uint32_t>(field_info.position);
+        value.nsec = introspector::read_value<uint32_t>(field_info.position + 4);
     }
     catch(...)
     {
@@ -406,8 +196,8 @@ bool introspector::get_duration(const std::string& path, ros::Duration& value) c
         }
 
         // Extract secs and nsecs.
-        value.sec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position])));
-        value.nsec = le32toh(*reinterpret_cast<uint32_t*>(&(introspector::m_bytes[field_info.position + 4])));
+        value.sec = introspector::read_value<uint32_t>(field_info.position);
+        value.nsec = introspector::read_value<uint32_t>(field_info.position + 4);
     }
     catch(...)
     {
