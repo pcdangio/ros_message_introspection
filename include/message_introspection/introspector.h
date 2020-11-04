@@ -128,6 +128,15 @@ public:
     /// \returns TRUE if the value was retrieved.
     /// Returns FALSE if the path does not exist or the field type doesn't match.
     bool get_duration(const std::string& path, ros::Duration& value) const;
+    /// \brief Gets any primitive field from the message as a number.
+    /// \param path The path to get the field from.
+    /// \param value The reference to store the retrieved value in.
+    /// \returns TRUE if the value was retrieved.
+    /// Returns FALSE if the path does not exist or the field type doesn't match.
+    /// \details This method will convert any existing primitive field value into a double.
+    /// Time/Duration fields return seconds as a double.
+    /// String fields are attempted to be parsed into a number (may return NaN if string is not a number).
+    bool get_number(const std::string& path, double& value) const;
 
     // PRINTING
     /// \brief Prints the message's component definitions to a string.
@@ -200,6 +209,19 @@ private:
     /// \param current_path The current fully qualified path of recursion.
     /// \param current_position The current position in the message's serialized bytes.
     void update_field_map(const definition_tree_t& definition_tree, const std::string& current_path, uint32_t& current_position);
+
+    // FIELD READING
+    /// \brief Reads data out of m_bytes.
+    /// \tparam T The data type to read.
+    /// \param position The position to read the data from in the m_bytes array.
+    /// \returns The read value.
+    /// \note Use appropriate exception handling around this method.
+    template<typename T>
+    T read_value(uint32_t position) const
+    {
+        // Using endian.h automatically assumes host is little endian. No need for conversion.
+        return *reinterpret_cast<T*>(&(introspector::m_bytes[position]));
+    }
 };
 
 }

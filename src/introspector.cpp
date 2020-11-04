@@ -416,6 +416,117 @@ bool introspector::get_duration(const std::string& path, ros::Duration& value) c
 
     return true;
 }
+bool introspector::get_number(const std::string& path, double& value) const
+{
+    try
+    {
+        // Get field info from map.
+        auto field_info = introspector::m_field_map.at(path);
+
+        // Use the appropriate get function to grab the value and convert it to a double.
+        switch(field_info.primitive_type)
+        {
+            case definition_t::primitive_type_t::BOOL:
+            {
+                value = static_cast<double>(introspector::read_value<bool>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::INT8:
+            {
+                value = static_cast<double>(introspector::read_value<int8_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::INT16:
+            {
+                value = static_cast<double>(introspector::read_value<int16_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::INT32:
+            {
+                value = static_cast<double>(introspector::read_value<int32_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::INT64:
+            {
+                value = static_cast<double>(introspector::read_value<int64_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::UINT8:
+            {
+                value = static_cast<double>(introspector::read_value<uint8_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::UINT16:
+            {
+                value = static_cast<double>(introspector::read_value<uint16_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::UINT32:
+            {
+                value = static_cast<double>(introspector::read_value<uint32_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::UINT64:
+            {
+                value = static_cast<double>(introspector::read_value<uint64_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::FLOAT32:
+            {
+                value = static_cast<double>(introspector::read_value<float_t>(field_info.position));
+                return true;
+            }
+            case definition_t::primitive_type_t::FLOAT64:
+            {
+                value = introspector::read_value<double_t>(field_info.position);
+                return true;
+            }
+            case definition_t::primitive_type_t::STRING:
+            {
+                // First read the string.
+                // Read the string length.
+                uint32_t string_length = introspector::read_value<uint32_t>(field_info.position);
+                std::string string = std::string(reinterpret_cast<char*>(&(introspector::m_bytes[field_info.position + 4])), string_length);
+
+                // Try to parse the string as a value.
+                try
+                {
+                    value = std::stod(string);
+                }
+                catch(...)
+                {
+                    value = std::numeric_limits<double_t>::quiet_NaN();
+                }
+
+                return true;
+            }
+            case definition_t::primitive_type_t::TIME:
+            {
+                // Convert sec/nsec to double.
+                uint32_t sec = introspector::read_value<uint32_t>(field_info.position);
+                uint32_t nsec = introspector::read_value<uint32_t>(field_info.position + 4);
+                value = static_cast<double>(sec) + static_cast<double>(nsec) / 1000000000.0;
+                return true;
+            }
+            case definition_t::primitive_type_t::DURATION:
+            {
+                // Convert sec/nsec to double.
+                uint32_t sec = introspector::read_value<uint32_t>(field_info.position);
+                uint32_t nsec = introspector::read_value<uint32_t>(field_info.position + 4);
+                value = static_cast<double>(sec) + static_cast<double>(nsec) / 1000000000.0;
+                return true;
+            }
+            case definition_t::primitive_type_t::NON_PRIMITIVE:
+            {
+                return false;
+            }
+        }
+    }
+    catch(...)
+    {
+        return false;
+    }
+}
 
 // PRINTING
 std::string introspector::print_components() const
