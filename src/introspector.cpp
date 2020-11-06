@@ -370,7 +370,7 @@ std::string introspector::print_definition_tree() const
 }
 
 // COMPONENTS
-void introspector::parse_components(std::string message_type, std::string introspector)
+void introspector::parse_components(std::string message_type, std::string definition)
 {
     // Clear current component definitions.
     introspector::m_component_definitions.clear();
@@ -379,7 +379,7 @@ void introspector::parse_components(std::string message_type, std::string intros
     auto* fields_workspace = &introspector::m_component_definitions[message_type];
 
     // Convert description into a stringstream.
-    std::stringstream description_stream(introspector);
+    std::stringstream description_stream(definition);
 
     // Set up tokenizer delimiter.
     boost::char_separator<char> delimiter(" ");
@@ -405,6 +405,12 @@ void introspector::parse_components(std::string message_type, std::string intros
         // Tokenize line into vector.
         boost::tokenizer<boost::char_separator<char>> tokenizer(current_line, delimiter);
         std::vector<std::string> tokens(tokenizer.begin(), tokenizer.end());
+
+        // Check if tokens exist.
+        if(tokens.empty())
+        {
+            continue;
+        }
         
         // Check if first token is a new sub-message designator.
         if(tokens[0].compare("MSG:") == 0)
