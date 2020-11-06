@@ -26,6 +26,13 @@ public:
     introspector();
     ~introspector();
 
+    // CONFIG
+    /// \brief Sets the type of message for introspection.
+    /// \param type The message's ROS type.
+    /// \param definition The message's definition string.
+    /// \param md5 The message's MD5 hash.
+    void new_message_type(const std::string& type, const std::string& definition, const std::string& md5);
+
     // NEW MESSAGE
     /// \brief Sets a new topic message instance to read from.
     /// \param message The new message instance.

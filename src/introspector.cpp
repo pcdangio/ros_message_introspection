@@ -16,6 +16,24 @@ introspector::~introspector()
     delete [] introspector::m_bytes;
 }
 
+// CONFIG
+void introspector::new_message_type(const std::string& type, const std::string& definition, const std::string& md5)
+{
+    // Register the message if it hasn't been registered already.
+    if(!introspector::is_registered(md5))
+    {
+        // Register message.
+        introspector::register_message(md5, type, definition);
+    }
+
+    // Clear old data.
+    delete [] introspector::m_bytes;
+    introspector::m_bytes = nullptr;
+
+    // Update field map.
+    introspector::m_field_map.clear();
+}
+
 // MESSAGE
 void introspector::new_message(const topic_tools::ShapeShifter& message)
 {
@@ -190,7 +208,7 @@ bool introspector::get_duration(const std::string& path, ros::Duration& value) c
         auto field_info = introspector::m_field_map.at(path);
 
         // Check field type.
-        if(field_info.primitive_type != definition_t::primitive_type_t::TIME)
+        if(field_info.primitive_type != definition_t::primitive_type_t::DURATION)
         {
             return false;
         }
