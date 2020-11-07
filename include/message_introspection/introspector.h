@@ -187,12 +187,6 @@ private:
     /// \param component_definition The component information to add to the definition's sub tree.
     void add_definition(const std::string& parent_path, definition_tree_t& definition_tree, const definition_t& component_definition);
 
-    /// \brief A recursive method for printing a definition tree to a stringstream.
-    /// \param stream The output stream to print to.
-    /// \param definition_tree The definition tree to print.
-    /// \param level The current depth of the tree.
-    void print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const;
-
     // LISTING
     /// \brief A method for getting the definition tree of a specified path.
     /// \param path The path to get the definition tree of.

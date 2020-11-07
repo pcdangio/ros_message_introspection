@@ -360,13 +360,7 @@ std::string introspector::print_components() const
 }
 std::string introspector::print_definition_tree() const
 {
-    // Create output stream.
-    std::stringstream output;
-
-    // Recursively print the tree.
-    introspector::print_definition_tree(output, introspector::m_definition_tree, 0);
-
-    return output.str();
+    return introspector::m_definition_tree.print();
 }
 
 // COMPONENTS
@@ -506,21 +500,6 @@ void introspector::add_definition(const std::string& parent_path, definition_tre
 definition_tree_t introspector::definition_tree() const
 {
     return introspector::m_definition_tree;
-}
-void introspector::print_definition_tree(std::stringstream& stream, const definition_tree_t& definition_tree, uint32_t level) const
-{
-    // Print definition's info in one line.
-    stream << "name = " << definition_tree.definition.name() << " type = " << definition_tree.definition.type() << " size = " << definition_tree.definition.size() << " array = " << definition_tree.definition.array() << std::endl;
-
-    // Print sub definitions indented.
-    for(auto field = definition_tree.fields.begin(); field != definition_tree.fields.end(); ++field)
-    {
-        for(uint32_t i = 0; i <= level; ++i)
-        {
-            stream << "\t";
-        }
-        introspector::print_definition_tree(stream, *field, level+1);
-    }
 }
 
 // POSITIONING

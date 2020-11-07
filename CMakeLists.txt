@@ -24,6 +24,7 @@ include_directories(
 # Build library.
 add_library(${PROJECT_NAME}
   src/definition.cpp
+  src/definition_tree.cpp
   src/introspector.cpp
 )
 target_link_libraries(${PROJECT_NAME}
