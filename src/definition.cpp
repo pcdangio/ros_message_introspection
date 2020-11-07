@@ -98,10 +98,6 @@ std::string definition_t::path() const
 }
 
 // UPDATE
-void definition_t::update_name(const std::string& name)
-{
-    definition_t::m_name = name;
-}
 void definition_t::update_type(const std::string& type)
 {
     // Store the type.
