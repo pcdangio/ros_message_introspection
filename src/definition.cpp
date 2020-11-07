@@ -112,7 +112,7 @@ void definition_t::update_type(const std::string& type)
         definition_t::m_primitive_type = definition_t::primitive_type_t::BOOL;
         definition_t::m_size = 1;
     }
-    else if(type.compare("int8") == 0)
+    else if(type.compare("int8") == 0 || type.compare("byte") == 0)
     {
         definition_t::m_primitive_type = definition_t::primitive_type_t::INT8;
         definition_t::m_size = 1;
@@ -132,7 +132,7 @@ void definition_t::update_type(const std::string& type)
         definition_t::m_primitive_type = definition_t::primitive_type_t::INT64;
         definition_t::m_size = 8;
     }
-    else if(type.compare("uint8") == 0)
+    else if(type.compare("uint8") == 0 || type.compare("char") == 0)
     {
         definition_t::m_primitive_type = definition_t::primitive_type_t::UINT8;
         definition_t::m_size = 1;
