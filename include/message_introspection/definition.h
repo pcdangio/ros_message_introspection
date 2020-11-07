@@ -88,6 +88,9 @@ public:
     std::string path() const;
 
     // UPDATE
+    /// \brief Updates the definition's name.
+    /// \param name The new name of the definition.
+    void update_name(const std::string& name);
     /// \brief Updates the definition's type.
     /// \param type The new type string to assign.
     void update_type(const std::string& type);
