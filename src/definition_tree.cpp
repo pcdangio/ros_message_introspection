@@ -5,7 +5,7 @@
 using namespace message_introspection;
 
 // PATH
-bool definition_tree_t::get_path_definitions(const std::string& path, std::vector<definition_t> definitions) const
+bool definition_tree_t::get_path_definitions(const std::string& path, std::vector<definition_t>& definitions) const
 {
     // Track the current tree level, starting at the root.
     const definition_tree_t* current_tree = this;

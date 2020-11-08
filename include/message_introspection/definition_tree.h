@@ -23,7 +23,7 @@ public:
     /// \param path The relative path in the tree to get definitions for.
     /// \param definitions The vector to store ordered definitions in.
     /// \returns TRUE if succeeded, otherwise FALSE when path does not exist.
-    bool get_path_definitions(const std::string& path, std::vector<definition_t> definitions) const;
+    bool get_path_definitions(const std::string& path, std::vector<definition_t>& definitions) const;
     /// \brief Prints the definition tree to a string.
     /// \returns The definition tree as a string.
     std::string print() const;
