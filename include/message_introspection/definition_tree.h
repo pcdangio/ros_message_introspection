@@ -19,6 +19,20 @@ public:
     /// \brief The fields belonging to this message.
     std::vector<definition_tree_t> fields;
 
+    /// \brief Checks if a path exists in the definition tree.
+    /// \param path The relative path in the tree to check existence for.
+    /// \returns TRUE if the path exists, otherwise false.
+    /// \note Array indices and bounds are ignored.
+    bool path_exists(const std::string& path) const;
+    /// \brief Checks if any component of a path is an array.
+    /// \param path The relative path in the tree to check for array components.
+    /// \returns TRUE if the path exists and has array components, otherwise FALSE.
+    bool path_has_arrays(const std::string& path) const;
+    /// \brief Gets the definition for a path in the tree.
+    /// \param path The relative path in the tree to get the definition for.
+    /// \param definition The definition instance to store the result in.
+    /// \returns TRUE if succeeded, otherwise FALSE when the path does not exist.
+    bool get_path_definition(const std::string& path, definition_t& definition) const;
     /// \brief Gets an ordered list of definitions from a path in the tree.
     /// \param path The relative path in the tree to get definitions for.
     /// \param definitions The vector to store ordered definitions in.
@@ -29,6 +43,11 @@ public:
     std::string print() const;
 
 private:
+    /// \brief Splits a path up into it's component pieces.
+    /// \param path The path to tokenize.
+    /// \returns A vector of the path components.
+    /// \note This method removes any array indicators.
+    std::vector<std::string> tokenize_path(const std::string& path) const;
     /// \brief A recursive method for printing a definition tree to a stringstream.
     /// \param stream The output stream to print to.
     /// \param definition_tree The definition tree to print.
